@@ -25,7 +25,7 @@ const works = [
   { id: 2, src: art2, medium: "leather" }, { id: 3, src: art3, medium: "canvas" },
 ];
 function Index() {
-  const [language, setLanguage] = useState<Language>("om");
+  const [language, setLanguage] = useState<Language>("en");
   const [filter, setFilter] = useState<Filter>("all");
   const [favorites, setFavorites] = useState<number[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
