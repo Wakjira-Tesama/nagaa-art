@@ -72,7 +72,8 @@ function WorksPage() {
       const currentIndex = visible.findIndex((w) => w.id === selected);
       if (currentIndex !== -1 && visible.length > 0) {
         const nextIndex = (currentIndex + direction + visible.length) % visible.length;
-        setSelected(visible[nextIndex].id);
+        const nextWork = visible[nextIndex];
+        if (nextWork) setSelected(nextWork.id);
       }
     }
   }

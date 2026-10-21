@@ -7,90 +7,51 @@ import {
   getCategoryLabel,
   slugifyCategory,
   type Language,
-  type Filter,
   type Category,
   type CustomCategory,
 } from "@/lib/art-content";
+import { artworkAssetMap } from "@/lib/artwork-assets";
+import {
+  defaultAdminProfile,
+  getProfileInitials,
+  type AdminProfile,
+  type Artwork,
+  type Inquiry,
+} from "@/lib/portfolio-types";
+import { isSupabaseConfigured } from "@/lib/supabase";
+import * as api from "@/lib/api";
 
-import realArtAliBirraLeather from "@/assets/real_art_ali_birra_leather.jpg";
-import realArtLeatherHachalu from "@/assets/real_art_leather_hachalu.jpg";
-import realArtLeaderLeather from "@/assets/real_art_leader_leather.jpg";
-import realArtSchoolMural from "@/assets/real_art_school_mural.jpg";
-import realArtIrreechaMural from "@/assets/real_art_irreecha_mural.jpg";
-import realArtEloraCoffee from "@/assets/real_art_elora_coffee.png";
-import realArtDamLandscape from "@/assets/real_art_dam_landscape.jpg";
-import realArtCafeMural from "@/assets/real_art_cafe_mural.jpg";
-import realArtLiveCanvas from "@/assets/real_art_live_canvas.jpg";
-import realArtOromoGirlMural from "@/assets/real_art_oromo_girl_mural.jpg";
-import realArtElderFramed from "@/assets/real_art_elder_framed.jpg";
-import realArtPortraitColor from "@/assets/real_art_portrait_color.jpg";
-import realArtEvolutionSchoolMural from "@/assets/real_art_evolution_school_mural.jpg";
-import realArtOliiSalonMural from "@/assets/real_art_olii_salon_mural.png";
-import realArtWildlifeSafari from "@/assets/real_art_wildlife_safari.jpg";
+export type { Artwork, Inquiry, AdminProfile };
+export { defaultAdminProfile, getProfileInitials };
 
-export interface Artwork {
-  id: number;
-  src: string;
-  medium: "leather" | "canvas";
-  category: Category;
-  dimensions: string;
-  year: string;
-  customTitle?: string;
-  customDesc?: string;
-  isCustom?: boolean;
-}
-
-export interface Inquiry {
-  id: string;
-  name: string;
-  phone: string;
-  category: Category;
-  medium: "leather" | "canvas" | "both";
-  message: string;
-  date: string;
-  status: "pending" | "in_progress" | "completed";
-}
-
-export interface AdminProfile {
-  name: string;
-  role: string;
-  email: string;
-  phone: string;
-  avatar: string;
-}
-
-export const defaultAdminProfile: AdminProfile = {
-  name: "Nagaa Abboomaa",
-  role: "Master Artist",
-  email: "admin@nagaa.art",
-  phone: "+251 911 000 000",
-  avatar: "",
-};
-
-export function getProfileInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "NA";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-}
-
-export const defaultWorks: Artwork[] = [
-  { id: 0, src: realArtAliBirraLeather, medium: "leather", category: "personal", dimensions: "60 × 85 cm", year: "2024" },
-  { id: 1, src: realArtLeatherHachalu, medium: "leather", category: "personal", dimensions: "55 × 75 cm", year: "2024" },
-  { id: 2, src: realArtLeaderLeather, medium: "leather", category: "other", dimensions: "50 × 70 cm", year: "2024" },
-  { id: 3, src: realArtSchoolMural, medium: "canvas", category: "school", dimensions: "12 × 4 m", year: "2024" },
-  { id: 4, src: realArtIrreechaMural, medium: "canvas", category: "hotel", dimensions: "8 × 3.5 m", year: "2024" },
-  { id: 5, src: realArtEloraCoffee, medium: "canvas", category: "hotel", dimensions: "5 × 2.6 m", year: "2025" },
-  { id: 6, src: realArtDamLandscape, medium: "canvas", category: "hospital", dimensions: "6 × 2.8 m", year: "2025" },
-  { id: 7, src: realArtCafeMural, medium: "canvas", category: "hotel", dimensions: "4 × 3 m", year: "2025" },
-  { id: 8, src: realArtLiveCanvas, medium: "canvas", category: "personal", dimensions: "70 × 90 cm", year: "2025" },
-  { id: 9, src: realArtOromoGirlMural, medium: "canvas", category: "school", dimensions: "3 × 1.2 m", year: "2025" },
-  { id: 10, src: realArtElderFramed, medium: "canvas", category: "hospital", dimensions: "50 × 65 cm", year: "2025" },
-  { id: 11, src: realArtPortraitColor, medium: "canvas", category: "personal", dimensions: "40 × 60 cm", year: "2025" },
-  { id: 12, src: realArtEvolutionSchoolMural, medium: "canvas", category: "school", dimensions: "8 × 2.5 m", year: "2025" },
-  { id: 13, src: realArtOliiSalonMural, medium: "canvas", category: "hotel", dimensions: "4 × 3 m", year: "2025" },
-  { id: 14, src: realArtWildlifeSafari, medium: "canvas", category: "hospital", dimensions: "120 × 90 cm", year: "2025" },
-];
+export const defaultWorks: Artwork[] = Object.entries({
+  0: ["real_art_ali_birra_leather", "leather", "personal", "60 × 85 cm", "2024"],
+  1: ["real_art_leather_hachalu", "leather", "personal", "55 × 75 cm", "2024"],
+  2: ["real_art_leader_leather", "leather", "other", "50 × 70 cm", "2024"],
+  3: ["real_art_school_mural", "canvas", "school", "12 × 4 m", "2024"],
+  4: ["real_art_irreecha_mural", "canvas", "hotel", "8 × 3.5 m", "2024"],
+  5: ["real_art_elora_coffee", "canvas", "hotel", "5 × 2.6 m", "2025"],
+  6: ["real_art_dam_landscape", "canvas", "hospital", "6 × 2.8 m", "2025"],
+  7: ["real_art_cafe_mural", "canvas", "hotel", "4 × 3 m", "2025"],
+  8: ["real_art_live_canvas", "canvas", "personal", "70 × 90 cm", "2025"],
+  9: ["real_art_oromo_girl_mural", "canvas", "school", "3 × 1.2 m", "2025"],
+  10: ["real_art_elder_framed", "canvas", "hospital", "50 × 65 cm", "2025"],
+  11: ["real_art_portrait_color", "canvas", "personal", "40 × 60 cm", "2025"],
+  12: ["real_art_evolution_school_mural", "canvas", "school", "8 × 2.5 m", "2025"],
+  13: ["real_art_olii_salon_mural", "canvas", "hotel", "4 × 3 m", "2025"],
+  14: ["real_art_wildlife_safari", "canvas", "hospital", "120 × 90 cm", "2025"],
+} as Record<number, [string, "leather" | "canvas", Category, string, string]>).map(
+  ([id, [key, medium, category, dimensions, year]]) => ({
+    id: Number(id),
+    src: artworkAssetMap[key] ?? "",
+    medium,
+    category,
+    dimensions,
+    year,
+    imageKey: key,
+    isCustom: false,
+  })
+);
 
 const initialInquiries: Inquiry[] = [
   {
@@ -99,7 +60,8 @@ const initialInquiries: Inquiry[] = [
     phone: "+251 911 234 567",
     category: "school",
     medium: "leather",
-    message: "Mana barumsaa keenyaaf suuraa Abbaa Gadaa gogaa loonii fi muka dhiheetiin qophaa'e hojjechiisuu barbaanna.",
+    message:
+      "Mana barumsaa keenyaaf suuraa Abbaa Gadaa gogaa loonii fi muka dhiheetiin qophaa'e hojjechiisuu barbaanna.",
     date: "2026-10-16 14:30",
     status: "pending",
   },
@@ -109,7 +71,8 @@ const initialInquiries: Inquiry[] = [
     phone: "+251 922 876 543",
     category: "hotel",
     medium: "canvas",
-    message: "Hoteela keenyaaf galma keessummootaa miidhagsuuf suuraa callee fi aadaa Oromoo bal'ina 80x120cm barbaanna.",
+    message:
+      "Hoteela keenyaaf galma keessummootaa miidhagsuuf suuraa callee fi aadaa Oromoo bal'ina 80x120cm barbaanna.",
     date: "2026-10-15 10:15",
     status: "in_progress",
   },
@@ -119,7 +82,8 @@ const initialInquiries: Inquiry[] = [
     phone: "+251 933 456 789",
     category: "hospital",
     medium: "canvas",
-    message: "Kutaa da'umsaa hospitaala keenyaaf suuraa nagaa fi jaalala haadhaa fi daa'imaa calaqqisiisu.",
+    message:
+      "Kutaa da'umsaa hospitaala keenyaaf suuraa nagaa fi jaalala haadhaa fi daa'imaa calaqqisiisu.",
     date: "2026-10-14 09:00",
     status: "completed",
   },
@@ -129,13 +93,13 @@ const initialInquiries: Inquiry[] = [
     phone: "+251 944 112 233",
     category: "personal",
     medium: "leather",
-    message: "Ayyaana gaa'ela keenyaaf suuraa maatii gogaa irratti muka aadaatiin qophaa'e nuuf hojjedhaa.",
+    message:
+      "Ayyaana gaa'ela keenyaaf suuraa maatii gogaa irratti muka aadaatiin qophaa'e nuuf hojjedhaa.",
     date: "2026-10-17 11:20",
     status: "pending",
   },
 ];
 
-// Session-only in-memory storage for favorites across route changes
 let sessionFavorites: number[] = [];
 const favoriteListeners = new Set<(favs: number[]) => void>();
 
@@ -144,61 +108,35 @@ function notifyFavoriteListeners(favs: number[]) {
   favoriteListeners.forEach((fn) => fn(sessionFavorites));
 }
 
+function storageErrorToast(language: Language) {
+  toast.error(
+    language === "om"
+      ? "Kuusaan guuteera — suuraa xinnoo filadhu."
+      : language === "am"
+        ? "ማከማቻ ሞልቷል — ትንሽ ሥዕል ይምረጡ።"
+        : "Storage is full — try a smaller image."
+  );
+}
+
 export function usePortfolio() {
   const [language, setLanguageState] = useState<Language>("om");
   const [favorites, setFavorites] = useState<number[]>(sessionFavorites);
-  const [customWorks, setCustomWorks] = useState<Artwork[]>([]);
-  const [artworkOverrides, setArtworkOverrides] = useState<Record<number, Partial<Artwork>>>({});
-  const [hiddenWorkIds, setHiddenWorkIds] = useState<number[]>([]);
+  const [works, setWorks] = useState<Artwork[]>(defaultWorks);
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>(initialInquiries);
   const [adminProfile, setAdminProfile] = useState<AdminProfile>(defaultAdminProfile);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
+  const [backendReady, setBackendReady] = useState(false);
 
-  // Initialize from storage
+  const t = translations[language];
+
   useEffect(() => {
     try {
       const savedLang = localStorage.getItem("nagaa-language");
       if (isLanguage(savedLang)) setLanguageState(savedLang);
-
-      const savedCustom = localStorage.getItem("nagaa-custom-artworks");
-      if (savedCustom) {
-        setCustomWorks(JSON.parse(savedCustom));
-      }
-
-      const savedOverrides = localStorage.getItem("nagaa-artwork-overrides");
-      if (savedOverrides) {
-        setArtworkOverrides(JSON.parse(savedOverrides));
-      }
-
-      const savedHidden = localStorage.getItem("nagaa-hidden-artworks");
-      if (savedHidden) {
-        setHiddenWorkIds(JSON.parse(savedHidden));
-      }
-
-      const savedCategories = localStorage.getItem("nagaa-custom-categories");
-      if (savedCategories) {
-        setCustomCategories(JSON.parse(savedCategories));
-      }
-
-      const savedProfile = localStorage.getItem("nagaa-admin-profile");
-      if (savedProfile) {
-        setAdminProfile({ ...defaultAdminProfile, ...JSON.parse(savedProfile) });
-      }
-
-      const savedInquiries = localStorage.getItem("nagaa-inquiries");
-      if (savedInquiries) {
-        setInquiries(JSON.parse(savedInquiries));
-      } else {
-        localStorage.setItem("nagaa-inquiries", JSON.stringify(initialInquiries));
-      }
-
-      const adminAuth = sessionStorage.getItem("nagaa-admin-auth");
-      if (adminAuth === "true") {
-        setIsAdminLoggedIn(true);
-      }
     } catch {
-      /* storage is optional */
+      /* optional */
     }
   }, []);
 
@@ -214,97 +152,142 @@ export function usePortfolio() {
     };
   }, []);
 
+  // Load from Supabase when configured; otherwise localStorage fallback
+  useEffect(() => {
+    let cancelled = false;
+
+    async function boot() {
+      if (!isSupabaseConfigured) {
+        loadLocalFallback();
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const session = await api.getAdminSession();
+        if (!cancelled) setIsAdminLoggedIn(Boolean(session));
+
+        const bundle = await api.fetchPortfolioBundle();
+        if (cancelled) return;
+
+        setWorks(bundle.works.length > 0 ? bundle.works : defaultWorks);
+        setCustomCategories(bundle.categories);
+        setInquiries(bundle.inquiries);
+        if (bundle.profile) setAdminProfile(bundle.profile);
+        setBackendReady(true);
+
+        if (session) {
+          try {
+            const freshInquiries = await api.fetchInquiries();
+            if (!cancelled) setInquiries(freshInquiries);
+          } catch {
+            /* keep public bundle */
+          }
+        }
+      } catch (err) {
+        console.error("Supabase boot failed, using local fallback", err);
+        if (!cancelled) {
+          loadLocalFallback();
+          toast.error(
+            language === "om"
+              ? "Supabase quunnamuun hin dandeenye — haala local fayyadamaa jira."
+              : "Could not reach Supabase — using local mode."
+          );
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    function loadLocalFallback() {
+      try {
+        const savedCustom = localStorage.getItem("nagaa-custom-artworks");
+        const savedOverrides = localStorage.getItem("nagaa-artwork-overrides");
+        const savedHidden = localStorage.getItem("nagaa-hidden-artworks");
+        const savedCategories = localStorage.getItem("nagaa-custom-categories");
+        const savedProfile = localStorage.getItem("nagaa-admin-profile");
+        const savedInquiries = localStorage.getItem("nagaa-inquiries");
+        const adminAuth = sessionStorage.getItem("nagaa-admin-auth");
+
+        const overrides: Record<number, Partial<Artwork>> = savedOverrides
+          ? JSON.parse(savedOverrides)
+          : {};
+        const hidden: number[] = savedHidden ? JSON.parse(savedHidden) : [];
+        const custom: Artwork[] = savedCustom ? JSON.parse(savedCustom) : [];
+
+        const merged = [
+          ...defaultWorks
+            .filter((w) => !hidden.includes(w.id))
+            .map((w) => (overrides[w.id] ? { ...w, ...overrides[w.id] } : w)),
+          ...custom,
+        ];
+        setWorks(merged);
+        if (savedCategories) setCustomCategories(JSON.parse(savedCategories));
+        if (savedProfile) setAdminProfile({ ...defaultAdminProfile, ...JSON.parse(savedProfile) });
+        if (savedInquiries) setInquiries(JSON.parse(savedInquiries));
+        else localStorage.setItem("nagaa-inquiries", JSON.stringify(initialInquiries));
+        if (adminAuth === "true") setIsAdminLoggedIn(true);
+      } catch {
+        /* optional */
+      }
+    }
+
+    boot();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function changeLanguage(value: string) {
     if (!isLanguage(value)) return;
     setLanguageState(value);
     try {
       localStorage.setItem("nagaa-language", value);
     } catch {
-      /* storage is optional */
+      /* optional */
     }
   }
-
-  const t = translations[language];
 
   function toggleFavorite(id: number) {
     const isFav = favorites.includes(id);
     let updated: number[];
     if (isFav) {
       updated = favorites.filter((item) => item !== id);
-      toast.info(t.unsave, {
-        description: t.titles[id] ?? "",
-      });
+      toast.info(t.unsave, { description: t.titles[id] ?? "" });
     } else {
       updated = [...favorites, id];
-      toast.success(t.save, {
-        description: t.titles[id] ?? "",
-      });
+      toast.success(t.save, { description: t.titles[id] ?? "" });
     }
     notifyFavoriteListeners(updated);
   }
-
-  // Combined works (default + overrides + custom), excluding deleted defaults
-  const allWorks: Artwork[] = [
-    ...defaultWorks
-      .filter((work) => !hiddenWorkIds.includes(work.id))
-      .map((work) => {
-        const override = artworkOverrides[work.id];
-        return override ? { ...work, ...override } : work;
-      }),
-    ...customWorks,
-  ];
 
   function categoryLabel(category: string) {
     return getCategoryLabel(category, t.categories, customCategories);
   }
 
-  function persistCustomWorks(updated: Artwork[]) {
-    setCustomWorks(updated);
-    try {
-      localStorage.setItem("nagaa-custom-artworks", JSON.stringify(updated));
-      return true;
-    } catch {
-      toast.error(
-        language === "om"
-          ? "Kuusaan guuteera — suuraa xinnoo filadhu."
-          : language === "am"
-            ? "ማከማቻ ሞልቷል — ትንሽ ሥዕል ይምረጡ።"
-            : "Storage is full — try a smaller image."
-      );
-      return false;
-    }
-  }
-
-  function persistOverrides(updated: Record<number, Partial<Artwork>>) {
-    setArtworkOverrides(updated);
-    try {
-      localStorage.setItem("nagaa-artwork-overrides", JSON.stringify(updated));
-      return true;
-    } catch {
-      toast.error(
-        language === "om"
-          ? "Kuusaan guuteera — suuraa xinnoo filadhu."
-          : language === "am"
-            ? "ማከማቻ ሞልቷል — ትንሽ ሥዕል ይምረጡ።"
-            : "Storage is full — try a smaller image."
-      );
-      return false;
-    }
-  }
-
-  // Admin: Add a custom gallery category
-  function addCustomCategory(label: string): CustomCategory | null {
+  async function addCustomCategory(label: string): Promise<CustomCategory | null> {
     const trimmed = label.trim();
     if (!trimmed) return null;
-
     const id = slugifyCategory(trimmed);
     const exists =
-      customCategories.some((c) => c.id === id) ||
-      Object.keys(t.categories).includes(id);
-
+      customCategories.some((c) => c.id === id) || Object.keys(t.categories).includes(id);
     if (exists) {
-      const existing = customCategories.find((c) => c.id === id);
-      return existing ?? { id, label: trimmed };
+      return customCategories.find((c) => c.id === id) ?? { id, label: trimmed };
+    }
+
+    if (backendReady) {
+      try {
+        const created = await api.createCategory(trimmed);
+        setCustomCategories((prev) => [...prev, created]);
+        toast.success(t.adminCategoryAdded, { description: trimmed });
+        return created;
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to add category");
+        return null;
+      }
     }
 
     const next: CustomCategory = { id, label: trimmed };
@@ -313,14 +296,13 @@ export function usePortfolio() {
     try {
       localStorage.setItem("nagaa-custom-categories", JSON.stringify(updated));
     } catch {
-      /* storage is optional */
+      /* optional */
     }
     toast.success(t.adminCategoryAdded, { description: trimmed });
     return next;
   }
 
-  // Admin: Add new artwork
-  function addCustomArtwork(newWorkData: {
+  async function addCustomArtwork(newWorkData: {
     title: string;
     description: string;
     medium: "leather" | "canvas";
@@ -328,12 +310,23 @@ export function usePortfolio() {
     dimensions: string;
     imageSrc: string;
   }) {
-    const knownIds = [
-      ...defaultWorks.map((w) => w.id),
-      ...customWorks.map((w) => w.id),
-      ...Object.keys(artworkOverrides).map(Number),
-    ];
-    const nextId = knownIds.length > 0 ? Math.max(...knownIds) + 1 : 100;
+    if (backendReady) {
+      try {
+        const created = await api.createArtwork(newWorkData);
+        setWorks((prev) => [created, ...prev]);
+        toast.success(t.adminArtworkAdded, { description: newWorkData.title });
+      } catch (err) {
+        console.error(err);
+        toast.error(
+          language === "om"
+            ? "Suuraa dabaluun hin milkoofne. Login admin mirkaneessi."
+            : "Could not add artwork. Make sure you are logged in as admin."
+        );
+      }
+      return;
+    }
+
+    const nextId = works.length > 0 ? Math.max(...works.map((w) => w.id)) + 1 : 100;
     const newArtwork: Artwork = {
       id: nextId,
       src: newWorkData.imageSrc,
@@ -345,15 +338,20 @@ export function usePortfolio() {
       customDesc: newWorkData.description,
       isCustom: true,
     };
-
-    if (!persistCustomWorks([newArtwork, ...customWorks])) return;
-    toast.success(t.adminArtworkAdded, {
-      description: newWorkData.title,
-    });
+    const updated = [newArtwork, ...works.filter((w) => w.isCustom), ...works.filter((w) => !w.isCustom)];
+    // simpler: prepend
+    setWorks([newArtwork, ...works]);
+    try {
+      const customOnly = [newArtwork, ...works.filter((w) => w.isCustom)];
+      localStorage.setItem("nagaa-custom-artworks", JSON.stringify(customOnly));
+    } catch {
+      storageErrorToast(language);
+      return;
+    }
+    toast.success(t.adminArtworkAdded, { description: newWorkData.title });
   }
 
-  // Admin: Update any artwork (default or custom)
-  function updateArtwork(
+  async function updateArtwork(
     id: number,
     data: {
       title: string;
@@ -364,6 +362,21 @@ export function usePortfolio() {
       imageSrc: string;
     }
   ) {
+    const target = works.find((w) => w.id === id);
+    if (!target) return;
+
+    if (backendReady && target.uuid) {
+      try {
+        const updated = await api.updateArtworkByUuid(target.uuid, data);
+        setWorks((prev) => prev.map((w) => (w.id === id ? updated : w)));
+        toast.success(t.adminArtworkUpdated, { description: data.title });
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to update artwork");
+      }
+      return;
+    }
+
     const patch = {
       src: data.imageSrc,
       medium: data.medium,
@@ -372,68 +385,91 @@ export function usePortfolio() {
       customTitle: data.title,
       customDesc: data.description,
     };
-
-    const customIndex = customWorks.findIndex((w) => w.id === id);
-    if (customIndex !== -1) {
-      const updated = customWorks.map((w) =>
-        w.id === id ? { ...w, ...patch } : w
-      );
-      if (!persistCustomWorks(updated)) return;
-    } else {
-      const updated = {
-        ...artworkOverrides,
-        [id]: { ...artworkOverrides[id], ...patch },
-      };
-      if (!persistOverrides(updated)) return;
+    setWorks((prev) => prev.map((w) => (w.id === id ? { ...w, ...patch } : w)));
+    try {
+      if (target.isCustom) {
+        const custom = works
+          .filter((w) => w.isCustom)
+          .map((w) => (w.id === id ? { ...w, ...patch } : w));
+        localStorage.setItem("nagaa-custom-artworks", JSON.stringify(custom));
+      } else {
+        const overrides = JSON.parse(localStorage.getItem("nagaa-artwork-overrides") || "{}");
+        overrides[id] = { ...overrides[id], ...patch };
+        localStorage.setItem("nagaa-artwork-overrides", JSON.stringify(overrides));
+      }
+    } catch {
+      storageErrorToast(language);
+      return;
     }
-
-    toast.success(t.adminArtworkUpdated, {
-      description: data.title,
-    });
+    toast.success(t.adminArtworkUpdated, { description: data.title });
   }
 
-  // Admin: Delete any artwork (default or custom)
-  function deleteArtwork(id: number) {
-    const isCustom = customWorks.some((w) => w.id === id);
-    if (isCustom) {
-      persistCustomWorks(customWorks.filter((w) => w.id !== id));
-    } else {
-      const updatedHidden = hiddenWorkIds.includes(id)
-        ? hiddenWorkIds
-        : [...hiddenWorkIds, id];
-      setHiddenWorkIds(updatedHidden);
-      try {
-        localStorage.setItem("nagaa-hidden-artworks", JSON.stringify(updatedHidden));
-      } catch {
-        /* storage is optional */
-      }
+  async function deleteArtwork(id: number) {
+    const target = works.find((w) => w.id === id);
+    if (!target) return;
 
-      if (artworkOverrides[id]) {
-        const { [id]: _removed, ...rest } = artworkOverrides;
-        setArtworkOverrides(rest);
-        try {
-          localStorage.setItem("nagaa-artwork-overrides", JSON.stringify(rest));
-        } catch {
-          /* storage is optional */
+    if (backendReady && target.uuid) {
+      try {
+        await api.deleteArtworkByUuid(target.uuid);
+        setWorks((prev) => prev.filter((w) => w.id !== id));
+        toast.info(t.adminArtworkDeleted);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to delete artwork");
+      }
+      return;
+    }
+
+    setWorks((prev) => prev.filter((w) => w.id !== id));
+    try {
+      if (target.isCustom) {
+        const custom = works.filter((w) => w.isCustom && w.id !== id);
+        localStorage.setItem("nagaa-custom-artworks", JSON.stringify(custom));
+      } else {
+        const hidden: number[] = JSON.parse(localStorage.getItem("nagaa-hidden-artworks") || "[]");
+        if (!hidden.includes(id)) {
+          localStorage.setItem("nagaa-hidden-artworks", JSON.stringify([...hidden, id]));
         }
       }
+    } catch {
+      /* optional */
     }
     toast.info(t.adminArtworkDeleted);
   }
 
-  /** @deprecated use deleteArtwork — kept for compatibility */
   function deleteCustomArtwork(id: number) {
-    deleteArtwork(id);
+    void deleteArtwork(id);
   }
 
-  // Add inquiry from Contact / Works form
-  function addInquiry(data: {
+  async function addInquiry(data: {
     name: string;
     phone: string;
     category: Category;
     medium: "leather" | "canvas" | "both";
     message: string;
-  }) {
+  }): Promise<boolean> {
+    if (backendReady || isSupabaseConfigured) {
+      try {
+        const created = await api.createInquiry(data);
+        // Public submitters are not authenticated — don't keep inquiries in their local state.
+        // Admin dashboard will load them after login via fetchInquiries().
+        if (isAdminLoggedIn) {
+          setInquiries((prev) => [created, ...prev]);
+        }
+        return true;
+      } catch (err) {
+        console.error(err);
+        toast.error(
+          language === "om"
+            ? "Ajaja erguu hin dandeenye. Irra deebi'ii yaali."
+            : language === "am"
+              ? "ትዕዛዙን መላክ አልተሳካም። እንደገና ይሞክሩ።"
+              : "Could not send your request. Please try again."
+        );
+        return false;
+      }
+    }
+
     const newInq: Inquiry = {
       id: `inq-${Date.now()}`,
       name: data.name,
@@ -449,62 +485,136 @@ export function usePortfolio() {
     try {
       localStorage.setItem("nagaa-inquiries", JSON.stringify(updated));
     } catch {
-      /* storage is optional */
+      /* optional */
+    }
+    return true;
+  }
+
+  async function refreshInquiries(): Promise<void> {
+    if (!(backendReady || isSupabaseConfigured) || !isAdminLoggedIn) return;
+    try {
+      const fresh = await api.fetchInquiries();
+      setInquiries(fresh);
+    } catch (err) {
+      console.error(err);
     }
   }
 
-  // Admin: Update inquiry status
-  function updateInquiryStatus(id: string, status: "pending" | "in_progress" | "completed") {
-    const updated = inquiries.map((inq) =>
-      inq.id === id ? { ...inq, status } : inq
-    );
+  async function updateInquiryStatus(
+    id: string,
+    status: "pending" | "in_progress" | "completed"
+  ) {
+    if (backendReady) {
+      try {
+        const updated = await api.updateInquiryStatusApi(id, status);
+        setInquiries((prev) => prev.map((inq) => (inq.id === id ? updated : inq)));
+        toast.success(t.adminInquiryStatusUpdated);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to update status");
+      }
+      return;
+    }
+
+    const updated = inquiries.map((inq) => (inq.id === id ? { ...inq, status } : inq));
     setInquiries(updated);
     try {
       localStorage.setItem("nagaa-inquiries", JSON.stringify(updated));
     } catch {
-      /* storage is optional */
+      /* optional */
     }
     toast.success(t.adminInquiryStatusUpdated);
   }
 
-  // Admin: Delete inquiry
-  function deleteInquiry(id: string) {
+  async function deleteInquiry(id: string) {
+    if (backendReady) {
+      try {
+        await api.deleteInquiryApi(id);
+        setInquiries((prev) => prev.filter((inq) => inq.id !== id));
+        toast.info(t.adminInquiryDeleted);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to delete inquiry");
+      }
+      return;
+    }
+
     const updated = inquiries.filter((inq) => inq.id !== id);
     setInquiries(updated);
     try {
       localStorage.setItem("nagaa-inquiries", JSON.stringify(updated));
     } catch {
-      /* storage is optional */
+      /* optional */
     }
     toast.info(t.adminInquiryDeleted);
   }
 
-  // Admin Auth functions
-  function adminLogin(password: string): boolean {
-    // Password check: accepts "nagaa", "nagaa2026", "admin", "123456"
-    if (password === "nagaa" || password === "nagaa2026" || password === "admin" || password === "123456") {
+  async function adminLogin(password: string, email?: string): Promise<boolean> {
+    if (backendReady || isSupabaseConfigured) {
+      try {
+        const loginEmail = (email || adminProfile.email || "admin@nagaa.art").trim();
+        await api.adminSignIn(loginEmail, password);
+        setIsAdminLoggedIn(true);
+        try {
+          const fresh = await api.fetchInquiries();
+          setInquiries(fresh);
+        } catch {
+          /* optional */
+        }
+        return true;
+      } catch (err) {
+        console.error(err);
+        return false;
+      }
+    }
+
+    if (
+      password === "nagaa" ||
+      password === "nagaa2026" ||
+      password === "admin" ||
+      password === "123456"
+    ) {
       setIsAdminLoggedIn(true);
       try {
         sessionStorage.setItem("nagaa-admin-auth", "true");
       } catch {
-        /* storage is optional */
+        /* optional */
       }
       return true;
     }
     return false;
   }
 
-  function adminLogout() {
+  async function adminLogout() {
+    if (backendReady || isSupabaseConfigured) {
+      try {
+        await api.adminSignOut();
+      } catch {
+        /* optional */
+      }
+    }
     setIsAdminLoggedIn(false);
     try {
       sessionStorage.removeItem("nagaa-admin-auth");
     } catch {
-      /* storage is optional */
+      /* optional */
     }
     toast.info(t.adminLogout);
   }
 
-  function updateAdminProfile(next: Partial<AdminProfile>) {
+  async function updateAdminProfile(next: Partial<AdminProfile>) {
+    if (backendReady) {
+      try {
+        const updated = await api.updateAdminProfileApi({ ...adminProfile, ...next });
+        setAdminProfile(updated);
+        toast.success(t.adminProfileUpdated);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to update profile");
+      }
+      return;
+    }
+
     const updated: AdminProfile = {
       ...adminProfile,
       ...next,
@@ -518,13 +628,7 @@ export function usePortfolio() {
     try {
       localStorage.setItem("nagaa-admin-profile", JSON.stringify(updated));
     } catch {
-      toast.error(
-        language === "om"
-          ? "Kuusaan guuteera — suuraa xinnoo filadhu."
-          : language === "am"
-            ? "ማከማቻ ሞልቷል — ትንሽ ፎቶ ይምረጡ።"
-            : "Storage is full — try a smaller photo."
-      );
+      storageErrorToast(language);
       return;
     }
     toast.success(t.adminProfileUpdated);
@@ -537,8 +641,8 @@ export function usePortfolio() {
     t,
     favorites,
     toggleFavorite,
-    works: allWorks,
-    customWorks,
+    works,
+    customWorks: works.filter((w) => w.isCustom),
     customCategories,
     addCustomCategory,
     categoryLabel,
@@ -548,6 +652,7 @@ export function usePortfolio() {
     deleteCustomArtwork,
     inquiries,
     addInquiry,
+    refreshInquiries,
     updateInquiryStatus,
     deleteInquiry,
     isAdminLoggedIn,
@@ -555,5 +660,8 @@ export function usePortfolio() {
     adminLogout,
     adminProfile,
     updateAdminProfile,
+    isLoading,
+    backendReady,
+    isSupabaseConfigured,
   };
 }

@@ -14,6 +14,7 @@ import {
   Layers,
   CheckCircle2,
   Phone,
+  X,
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { usePortfolio, type Artwork } from "@/hooks/use-portfolio";
-import { type Category } from "@/lib/art-content";
+import { type BuiltInCategory } from "@/lib/art-content";
 
 import nagaaAsset from "@/assets/nagaa.jpg.asset.json";
 import nagaaHero from "@/assets/nagaa_hero.jpg";
@@ -214,22 +215,22 @@ function IndexPage() {
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 {
-                  key: "school" as Category,
+                  key: "school" as BuiltInCategory,
                   icon: School,
                   count: works.filter((w) => w.category === "school").length,
                 },
                 {
-                  key: "hospital" as Category,
+                  key: "hospital" as BuiltInCategory,
                   icon: Hospital,
                   count: works.filter((w) => w.category === "hospital").length,
                 },
                 {
-                  key: "personal" as Category,
+                  key: "personal" as BuiltInCategory,
                   icon: User,
                   count: works.filter((w) => w.category === "personal").length,
                 },
                 {
-                  key: "hotel" as Category,
+                  key: "hotel" as BuiltInCategory,
                   icon: Hotel,
                   count: works.filter((w) => w.category === "hotel").length,
                 },

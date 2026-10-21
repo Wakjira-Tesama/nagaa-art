@@ -46,7 +46,7 @@ function ContactPage() {
   const [formMessage, setFormMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!formName.trim() || !formPhone.trim()) {
       toast.error(
@@ -60,23 +60,22 @@ function ContactPage() {
     }
 
     setIsSubmitting(true);
-    addInquiry({
-      name: formName.trim(),
-      phone: formPhone.trim(),
-      category: formCategory,
-      medium: formMedium,
-      message: formMessage.trim(),
-    });
-
-    setTimeout(() => {
-      setIsSubmitting(false);
-      toast.success(t.formSuccess, {
-        duration: 5000,
+    try {
+      const ok = await addInquiry({
+        name: formName.trim(),
+        phone: formPhone.trim(),
+        category: formCategory,
+        medium: formMedium,
+        message: formMessage.trim(),
       });
+      if (!ok) return;
+      toast.success(t.formSuccess, { duration: 5000 });
       setFormName("");
       setFormPhone("");
       setFormMessage("");
-    }, 700);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import {
   Lock,
   Unlock,
@@ -69,19 +69,44 @@ function AdminPage() {
     deleteArtwork,
     updateInquiryStatus,
     deleteInquiry,
+    refreshInquiries,
     isAdminLoggedIn,
     adminLogin,
     adminLogout,
     adminProfile,
     updateAdminProfile,
+    isSupabaseConfigured,
+    backendReady,
   } = usePortfolio();
 
   const [username, setUsername] = useState("admin@nagaa.art");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  useEffect(() => {
+    if (adminProfile.email) setUsername(adminProfile.email);
+  }, [adminProfile.email]);
 
   const [currentView, setCurrentView] = useState<"overview" | "artworks" | "inquiries">("overview");
+
+  const onRefreshInquiries = useEffectEvent(() => {
+    void refreshInquiries();
+  });
+
+  // Keep admin inquiry list in sync with Supabase (new website orders)
+  useEffect(() => {
+    if (!isAdminLoggedIn) return;
+    onRefreshInquiries();
+    const timer = window.setInterval(() => onRefreshInquiries(), 20000);
+    const onFocus = () => onRefreshInquiries();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [isAdminLoggedIn, currentView]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -119,31 +144,48 @@ function AdminPage() {
   const selectableCategories = listSelectableCategories(customCategories);
   const filterCategories: Category[] = ["all", ...selectableCategories];
 
-  function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoginError("");
-    const success = adminLogin(password);
-    if (!success) {
-      setLoginError(
-        language === "om"
-          ? "Jechi icchiitii sirrii miti. (Fakkeenya: 'nagaa' ykn 'nagaa2026')"
-          : language === "am"
-            ? "የይለፍ ቃሉ ትክክል አይደለም። (ለምሳሌ፡ 'nagaa' ወይም 'nagaa2026')"
-            : "Invalid password. (Hint: use 'nagaa' or 'nagaa2026')"
-      );
-    } else {
-      toast.success(
-        language === "om"
-          ? "Baga Nagaan Dhuftan, Ogeessa Nagaa!"
-          : language === "am"
-            ? "እንኳን ደህና መጡ፣ ናጋ አቦማ!"
-            : "Welcome to Nagaa Art Studio Admin!"
-      );
+    setIsLoggingIn(true);
+    try {
+      const success = await adminLogin(password, username);
+      if (!success) {
+        setLoginError(
+          isSupabaseConfigured
+            ? language === "om"
+              ? "Imeelii ykn jecha icchiitii sirrii miti. Supabase Auth fayyadami."
+              : "Invalid email or password. Use your Supabase Auth admin user."
+            : language === "om"
+              ? "Jechi icchiitii sirrii miti. (Fakkeenya: 'nagaa' ykn 'nagaa2026')"
+              : language === "am"
+                ? "የይለፍ ቃሉ ትክክል አይደለም። (ለምሳሌ፡ 'nagaa' ወይም 'nagaa2026')"
+                : "Invalid password. (Hint: use 'nagaa' or 'nagaa2026')"
+        );
+      } else {
+        toast.success(
+          language === "om"
+            ? "Baga Nagaan Dhuftan, Ogeessa Nagaa!"
+            : language === "am"
+              ? "እንኳን ደህና መጡ፣ ናጋ አቦማ!"
+              : "Welcome to Nagaa Art Studio Admin!"
+        );
+      }
+    } finally {
+      setIsLoggingIn(false);
     }
   }
 
-  function handleQuickDemoLogin() {
-    adminLogin("nagaa");
+  async function handleQuickDemoLogin() {
+    if (isSupabaseConfigured) {
+      toast.info(
+        language === "om"
+          ? "Supabase irratti imeelii fi password admin fayyadami."
+          : "Use your Supabase admin email and password."
+      );
+      return;
+    }
+    await adminLogin("nagaa");
     toast.success("Demo Login Successful!");
   }
 
@@ -227,8 +269,8 @@ function AdminPage() {
     deleteArtwork(id);
   }
 
-  function handleAddNewCategory() {
-    const created = addCustomCategory(newCategoryName);
+  async function handleAddNewCategory() {
+    const created = await addCustomCategory(newCategoryName);
     if (!created) {
       toast.error(
         language === "om"
@@ -374,6 +416,13 @@ function AdminPage() {
               {t.adminLoginTitle}
             </h1>
             <p className="mt-2 text-sm text-slate-500">{t.adminLoginSubtitle}</p>
+            <p className="mt-2 text-[11px] font-medium text-slate-400">
+              {isSupabaseConfigured
+                ? backendReady
+                  ? "Backend: Supabase connected"
+                  : "Backend: Supabase connecting…"
+                : "Backend: local mode (add .env for Supabase)"}
+            </p>
           </div>
 
           {loginError && (
@@ -421,21 +470,24 @@ function AdminPage() {
 
             <Button
               type="submit"
+              disabled={isLoggingIn}
               className="h-11 w-full rounded-2xl bg-amber-600 text-sm font-semibold text-white hover:bg-amber-700"
             >
               <Unlock className="mr-2 h-4 w-4" />
-              {t.adminLoginButton}
+              {isLoggingIn ? "..." : t.adminLoginButton}
             </Button>
 
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleQuickDemoLogin}
-              className="h-10 w-full rounded-2xl border-slate-200 text-sm text-slate-700"
-            >
-              <Sparkles className="mr-1.5 h-3.5 w-3.5 text-amber-600" />
-              {t.adminQuickDemoLogin}
-            </Button>
+            {!isSupabaseConfigured && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleQuickDemoLogin}
+                className="h-10 w-full rounded-2xl border-slate-200 text-sm text-slate-700"
+              >
+                <Sparkles className="mr-1.5 h-3.5 w-3.5 text-amber-600" />
+                {t.adminQuickDemoLogin}
+              </Button>
+            )}
           </form>
 
           <div className="mt-6 border-t border-slate-100 pt-4 text-center">

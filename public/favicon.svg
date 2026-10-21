@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Nagaa Art">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a1612"/>
+      <stop offset="100%" stop-color="#2c2416"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <!-- palette body -->
+  <path
+    d="M32 12c-11.5 0-20 8.2-20 20 0 7.4 4.6 12.8 11.2 12.8 2.4 0 4.3-1 5.5-2.7.8-1.1 2.2-1.4 3.3-.7 1.4.9 3.1 1.4 5 1.4 8.3 0 15-7.6 15-17 0-7.6-8.9-13.8-20-13.8z"
+    fill="url(#accent)"
+  />
+  <!-- paint wells -->
+  <circle cx="24" cy="26" r="3.2" fill="#1a1612" opacity="0.85"/>
+  <circle cx="33" cy="22" r="3.2" fill="#7c2d12" opacity="0.9"/>
+  <circle cx="40" cy="28" r="3.2" fill="#1a1612" opacity="0.7"/>
+  <circle cx="28" cy="34" r="3" fill="#44403c" opacity="0.9"/>
+  <!-- brush tip -->
+  <path d="M44 40l6 6-2.2 2.2-6-6L44 40z" fill="#f8fafc"/>
+  <path d="M41.8 42.2l6 6 1.4-1.4-6-6-1.4 1.4z" fill="#e7e5e4"/>
+  <rect x="48.5" y="44.5" width="3.2" height="10" rx="1.2" transform="rotate(45 50 49.5)" fill="#a8a29e"/>
+</svg>
