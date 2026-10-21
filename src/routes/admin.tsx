@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import {
-  Lock,
   Unlock,
   Palette,
   Users,
@@ -37,6 +36,7 @@ import {
   listSelectableCategories,
   type Category,
 } from "@/lib/art-content";
+import nagaaHero from "@/assets/nagaa_hero.jpg";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -402,38 +402,35 @@ function AdminPage() {
 
   if (!isAdminLoggedIn) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,_#fff7ed_0%,_#f8fafc_55%,_#f1f5f9_100%)] p-4 text-slate-800">
-        <div className="w-full max-w-md rounded-3xl border border-slate-200/80 bg-white/90 p-8 shadow-[0_20px_60px_-30px_rgba(180,83,9,0.35)] backdrop-blur">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-md shadow-amber-500/30">
-            <Lock className="h-6 w-6" />
-          </div>
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden text-white">
+        <img
+          src={nagaaHero}
+          alt=""
+          className="absolute inset-0 h-full w-full scale-105 object-cover animate-[login-drift_28s_ease-in-out_infinite_alternate]"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(160deg,rgba(12,10,8,0.72)_0%,rgba(28,18,10,0.55)_45%,rgba(8,7,6,0.82)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.45)_100%)]" />
 
-          <div className="mt-5 text-center">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700">
-              Nagaa Art Studio
-            </p>
-            <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900">
-              {t.adminLoginTitle}
+        <div className="relative z-10 w-full max-w-lg px-5 py-12 sm:px-8">
+          <div className="mb-10 text-center animate-[login-rise_0.9s_ease-out]">
+            <h1 className="font-display text-[clamp(2.75rem,8vw,4.25rem)] font-bold leading-[1.05] tracking-tight text-white drop-shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
+              Wel Come Nagaa
             </h1>
-            <p className="mt-2 text-sm text-slate-500">{t.adminLoginSubtitle}</p>
-            <p className="mt-2 text-[11px] font-medium text-slate-400">
-              {isSupabaseConfigured
-                ? backendReady
-                  ? "Backend: Supabase connected"
-                  : "Backend: Supabase connecting…"
-                : "Backend: local mode (add .env for Supabase)"}
-            </p>
+            <div className="mx-auto mt-5 h-px w-24 bg-gradient-to-r from-transparent via-amber-400/80 to-transparent" />
           </div>
 
           {loginError && (
-            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-center text-xs text-red-600">
+            <div className="mb-4 rounded-2xl border border-red-400/40 bg-red-950/50 px-4 py-3 text-center text-xs text-red-100 backdrop-blur-sm">
               {loginError}
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="mt-6 space-y-4">
+          <form
+            onSubmit={handleLogin}
+            className="space-y-4 rounded-3xl border border-white/15 bg-black/35 p-6 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.8)] backdrop-blur-md animate-[login-rise_1.1s_ease-out] sm:p-8"
+          >
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+              <label className="mb-1.5 block text-xs font-semibold tracking-wide text-white/75">
                 {t.adminEmailOrUser}
               </label>
               <Input
@@ -441,12 +438,12 @@ function AdminPage() {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="h-11 rounded-2xl border-slate-200 bg-slate-50 text-sm focus:bg-white"
+                className="h-12 rounded-2xl border-white/20 bg-white/10 text-sm text-white placeholder:text-white/40 focus:border-amber-400/60 focus:bg-white/15"
               />
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+              <label className="mb-1.5 block text-xs font-semibold tracking-wide text-white/75">
                 {t.adminPassword}
               </label>
               <div className="relative">
@@ -455,13 +452,12 @@ function AdminPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="nagaa"
-                  className="h-11 rounded-2xl border-slate-200 bg-slate-50 pr-11 text-sm focus:bg-white"
+                  className="h-12 rounded-2xl border-white/20 bg-white/10 pr-11 text-sm text-white placeholder:text-white/40 focus:border-amber-400/60 focus:bg-white/15"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 transition-colors hover:text-white"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -471,7 +467,7 @@ function AdminPage() {
             <Button
               type="submit"
               disabled={isLoggingIn}
-              className="h-11 w-full rounded-2xl bg-amber-600 text-sm font-semibold text-white hover:bg-amber-700"
+              className="h-12 w-full rounded-2xl bg-amber-500 text-sm font-semibold text-stone-950 shadow-[0_12px_40px_-12px_rgba(245,158,11,0.75)] transition-all hover:bg-amber-400 hover:shadow-[0_16px_48px_-10px_rgba(245,158,11,0.9)]"
             >
               <Unlock className="mr-2 h-4 w-4" />
               {isLoggingIn ? "..." : t.adminLoginButton}
@@ -482,20 +478,34 @@ function AdminPage() {
                 type="button"
                 variant="outline"
                 onClick={handleQuickDemoLogin}
-                className="h-10 w-full rounded-2xl border-slate-200 text-sm text-slate-700"
+                className="h-11 w-full rounded-2xl border-white/25 bg-transparent text-sm text-white/90 hover:bg-white/10 hover:text-white"
               >
-                <Sparkles className="mr-1.5 h-3.5 w-3.5 text-amber-600" />
+                <Sparkles className="mr-1.5 h-3.5 w-3.5 text-amber-300" />
                 {t.adminQuickDemoLogin}
               </Button>
             )}
           </form>
 
-          <div className="mt-6 border-t border-slate-100 pt-4 text-center">
-            <Link to="/" className="text-xs text-slate-500 transition-colors hover:text-amber-700">
+          <div className="mt-8 text-center animate-[login-rise_1.3s_ease-out]">
+            <Link
+              to="/"
+              className="text-xs tracking-wide text-white/55 transition-colors hover:text-amber-300"
+            >
               ← {t.navHome}
             </Link>
           </div>
         </div>
+
+        <style>{`
+          @keyframes login-rise {
+            from { opacity: 0; transform: translateY(18px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes login-drift {
+            from { transform: scale(1.05) translate3d(0, 0, 0); }
+            to { transform: scale(1.12) translate3d(-1.5%, -1%, 0); }
+          }
+        `}</style>
       </div>
     );
   }
