@@ -250,13 +250,16 @@ function AdminPage() {
   function openEditArtwork(work: (typeof works)[number]) {
     const title = work.customTitle || t.titles[work.id] || "";
     const description = work.customDesc || t.descriptions[work.id] || "";
+    const remoteUrl =
+      work.src.startsWith("http://") || work.src.startsWith("https://") ? work.src : "";
     setEditingArtworkId(work.id);
     setNewTitle(title);
     setNewDesc(description);
     setNewMedium(work.medium);
     setNewCategory(work.category);
     setNewDimensions(work.dimensions);
-    setNewImageUrl(work.src);
+    // Keep existing preview; URL field only for optional remote links (not /assets/…)
+    setNewImageUrl(remoteUrl);
     setPreviewImage(work.src);
     setFileName("");
     setShowNewCategory(false);
@@ -354,7 +357,20 @@ function AdminPage() {
       toast.error(t.adminTitleRequired);
       return;
     }
-    const finalImage = newImageUrl.trim() || previewImage;
+
+    // Prefer a newly pasted remote URL or uploaded file; otherwise keep the existing preview
+    // (bundled /assets/… paths are fine when editing — image URL paste is optional).
+    const pastedUrl = newImageUrl.trim();
+    const finalImage =
+      (pastedUrl &&
+      (pastedUrl.startsWith("http://") ||
+        pastedUrl.startsWith("https://") ||
+        pastedUrl.startsWith("data:"))
+        ? pastedUrl
+        : null) ||
+      previewImage ||
+      pastedUrl;
+
     if (!finalImage) {
       toast.error(t.adminImageRequired);
       return;
@@ -370,9 +386,9 @@ function AdminPage() {
     };
 
     if (editingArtworkId !== null) {
-      updateArtwork(editingArtworkId, payload);
+      void updateArtwork(editingArtworkId, payload);
     } else {
-      addCustomArtwork(payload);
+      void addCustomArtwork(payload);
     }
 
     resetAddForm();
@@ -1155,14 +1171,22 @@ function AdminPage() {
                 <div className="mt-3">
                   <p className="mb-1 text-[11px] text-slate-500">{t.adminOrPasteUrl}</p>
                   <Input
-                    type="url"
-                    value={newImageUrl.startsWith("data:") ? "" : newImageUrl}
+                    type="text"
+                    inputMode="url"
+                    value={
+                      newImageUrl.startsWith("data:") || newImageUrl.startsWith("/assets/")
+                        ? ""
+                        : newImageUrl
+                    }
                     onChange={(e) => {
-                      setNewImageUrl(e.target.value);
-                      setPreviewImage(e.target.value || null);
-                      setFileName("");
+                      const next = e.target.value.trim();
+                      setNewImageUrl(next);
+                      if (next) {
+                        setPreviewImage(next);
+                        setFileName("");
+                      }
                     }}
-                    placeholder="https://..."
+                    placeholder="https://… (optional)"
                     className="h-10 rounded-2xl border-slate-200 text-sm"
                   />
                 </div>
