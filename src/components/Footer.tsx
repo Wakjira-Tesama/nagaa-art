@@ -58,6 +58,11 @@ export function Footer() {
             </p>
             <ul className="space-y-2 text-xs">
               <li>
+                <Link to="/works" search={{ category: "wallpainting" } as any} className="hover:text-primary transition-colors">
+                  {t.categories.wallpainting}
+                </Link>
+              </li>
+              <li>
                 <Link to="/works" search={{ category: "school" } as any} className="hover:text-primary transition-colors">
                   {t.categories.school}
                 </Link>
@@ -88,14 +93,14 @@ export function Footer() {
             <ul className="space-y-2.5 text-xs">
               <li className="flex items-center gap-2">
                 <Phone className="h-3.5 w-3.5 text-primary shrink-0" />
-                <a href="tel:+251900000000" className="hover:text-primary transition-colors">
-                  +251 900 000 000
+                <a href="tel:+251917362405" className="hover:text-primary transition-colors">
+                  +251 917 362 405
                 </a>
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="h-3.5 w-3.5 text-primary shrink-0" />
-                <a href="mailto:nagaa.art@example.com" className="hover:text-primary transition-colors">
-                  nagaa.art@example.com
+                <a href="mailto:nagaaabboomaa@gmail.com" className="hover:text-primary transition-colors">
+                  nagaaabboomaa@gmail.com
                 </a>
               </li>
               <li className="flex items-center gap-2">
@@ -106,9 +111,8 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+        <div className="pt-8 text-center text-xs">
           <p>© {new Date().getFullYear()} Nagaa Abboomaa — Nagaa Art. All rights reserved.</p>
-          <p className="text-muted-foreground/80">{t.sample}</p>
         </div>
       </div>
     </footer>

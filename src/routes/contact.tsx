@@ -125,15 +125,15 @@ function ContactPage() {
                       <div>
                         <p className="text-xs text-muted-foreground">{t.phone}</p>
                         <a
-                          href="tel:+251900000000"
+                          href="tel:+251917362405"
                           className="font-display text-lg font-bold text-foreground hover:text-primary transition-colors"
                         >
-                          +251 900 000 000
+                          +251 917 362 405
                         </a>
                       </div>
                     </div>
                     <Button asChild size="sm" variant="outline" className="rounded-full text-xs self-start sm:self-auto">
-                      <a href="tel:+251900000000">{t.quickDirectCall}</a>
+                      <a href="tel:+251917362405">{t.quickDirectCall}</a>
                     </Button>
                   </div>
                 </div>
@@ -167,10 +167,10 @@ function ContactPage() {
                     <div>
                       <p className="text-xs text-muted-foreground">{t.email}</p>
                       <a
-                        href="mailto:nagaa.art@example.com"
+                        href="mailto:nagaaabboomaa@gmail.com"
                         className="font-semibold text-foreground hover:text-primary transition-colors break-all"
                       >
-                        nagaa.art@example.com
+                        nagaaabboomaa@gmail.com
                       </a>
                     </div>
                   </div>
@@ -222,7 +222,13 @@ function ContactPage() {
                         required
                         value={formName}
                         onChange={(e) => setFormName(e.target.value)}
-                        placeholder="Nagaa / Organization"
+                        placeholder={
+                          language === "om"
+                            ? "Maqaa keessan galchaa..."
+                            : language === "am"
+                              ? "ስምዎን ያስገቡ..."
+                              : "Your name / organization..."
+                        }
                         className="rounded-xl border-border/80 bg-background/60 focus:border-primary"
                       />
                     </div>
@@ -240,7 +246,7 @@ function ContactPage() {
                         required
                         value={formPhone}
                         onChange={(e) => setFormPhone(e.target.value)}
-                        placeholder="+251 9... / @username"
+                        placeholder="09... / +251 9..."
                         className="rounded-xl border-border/80 bg-background/60 focus:border-primary"
                       />
                     </div>
