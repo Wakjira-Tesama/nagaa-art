@@ -5,7 +5,7 @@ export interface Artwork {
   /** Supabase row id when backed by the database */
   uuid?: string;
   src: string;
-  medium: "leather" | "canvas";
+  medium: "leather" | "canvas" | "wall" | string;
   category: Category;
   dimensions: string;
   year: string;
@@ -13,6 +13,7 @@ export interface Artwork {
   customDesc?: string;
   isCustom?: boolean;
   imageKey?: string;
+  additionalImages?: string[];
 }
 
 export interface Inquiry {
@@ -37,8 +38,8 @@ export interface AdminProfile {
 export const defaultAdminProfile: AdminProfile = {
   name: "Nagaa Abboomaa",
   role: "Master Artist",
-  email: "admin@nagaa.art",
-  phone: "+251 911 000 000",
+  email: "nagaaabboomaa@gmail.com",
+  phone: "+251 917 362 405",
   avatar: "",
 };
 

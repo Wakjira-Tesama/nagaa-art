@@ -30,7 +30,7 @@ export interface Database {
           legacy_id: number | null;
           title: string;
           description: string;
-          medium: "leather" | "canvas";
+          medium: "leather" | "canvas" | "wall" | string;
           category: string;
           dimensions: string;
           year: string;
@@ -46,7 +46,7 @@ export interface Database {
           legacy_id?: number | null;
           title: string;
           description?: string;
-          medium: "leather" | "canvas";
+          medium: "leather" | "canvas" | "wall" | string;
           category: string;
           dimensions?: string;
           year?: string;
@@ -62,7 +62,7 @@ export interface Database {
           legacy_id?: number | null;
           title?: string;
           description?: string;
-          medium?: "leather" | "canvas";
+          medium?: "leather" | "canvas" | "wall" | string;
           category?: string;
           dimensions?: string;
           year?: string;

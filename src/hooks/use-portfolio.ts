@@ -28,17 +28,17 @@ export const defaultWorks: Artwork[] = Object.entries({
   0: ["real_art_ali_birra_leather", "leather", "personal", "60 × 85 cm", "2024"],
   1: ["real_art_leather_hachalu", "leather", "personal", "55 × 75 cm", "2024"],
   2: ["real_art_leader_leather", "leather", "other", "50 × 70 cm", "2024"],
-  3: ["real_art_school_mural", "canvas", "school", "12 × 4 m", "2024"],
-  4: ["real_art_irreecha_mural", "canvas", "hotel", "8 × 3.5 m", "2024"],
-  5: ["real_art_elora_coffee", "canvas", "hotel", "5 × 2.6 m", "2025"],
+  3: ["real_art_school_mural", "canvas", "wallpainting", "12 × 4 m", "2024"],
+  4: ["real_art_irreecha_mural", "canvas", "wallpainting", "8 × 3.5 m", "2024"],
+  5: ["real_art_elora_coffee", "canvas", "wallpainting", "5 × 2.6 m", "2025"],
   6: ["real_art_dam_landscape", "canvas", "hospital", "6 × 2.8 m", "2025"],
-  7: ["real_art_cafe_mural", "canvas", "hotel", "4 × 3 m", "2025"],
+  7: ["real_art_cafe_mural", "canvas", "wallpainting", "4 × 3 m", "2025"],
   8: ["real_art_live_canvas", "canvas", "personal", "70 × 90 cm", "2025"],
-  9: ["real_art_oromo_girl_mural", "canvas", "school", "3 × 1.2 m", "2025"],
+  9: ["real_art_oromo_girl_mural", "canvas", "wallpainting", "3 × 1.2 m", "2025"],
   10: ["real_art_elder_framed", "canvas", "hospital", "50 × 65 cm", "2025"],
   11: ["real_art_portrait_color", "canvas", "personal", "40 × 60 cm", "2025"],
-  12: ["real_art_evolution_school_mural", "canvas", "school", "8 × 2.5 m", "2025"],
-  13: ["real_art_olii_salon_mural", "canvas", "hotel", "4 × 3 m", "2025"],
+  12: ["real_art_evolution_school_mural", "canvas", "wallpainting", "8 × 2.5 m", "2025"],
+  13: ["real_art_olii_salon_mural", "canvas", "wallpainting", "4 × 3 m", "2025"],
   14: ["real_art_wildlife_safari", "canvas", "hospital", "120 × 90 cm", "2025"],
 } as Record<number, [string, "leather" | "canvas", Category, string, string]>).map(
   ([id, [key, medium, category, dimensions, year]]) => ({
@@ -174,7 +174,16 @@ export function usePortfolio() {
         setWorks(bundle.works.length > 0 ? bundle.works : defaultWorks);
         setCustomCategories(bundle.categories);
         setInquiries(bundle.inquiries);
-        if (bundle.profile) setAdminProfile(bundle.profile);
+        if (bundle.profile) {
+          const savedProfile = localStorage.getItem("nagaa-admin-profile");
+          const localProfile = savedProfile ? JSON.parse(savedProfile) : {};
+          setAdminProfile({
+            ...defaultAdminProfile,
+            ...localProfile,
+            ...bundle.profile,
+            avatar: bundle.profile.avatar || localProfile.avatar || "",
+          });
+        }
         setBackendReady(true);
 
         if (session) {
@@ -305,29 +314,23 @@ export function usePortfolio() {
   async function addCustomArtwork(newWorkData: {
     title: string;
     description: string;
-    medium: "leather" | "canvas";
+    medium: string;
     category: Category;
     dimensions: string;
     imageSrc: string;
+    additionalImages?: string[];
   }) {
+    let createdArtwork: Artwork | null = null;
     if (backendReady) {
       try {
-        const created = await api.createArtwork(newWorkData);
-        setWorks((prev) => [created, ...prev]);
-        toast.success(t.adminArtworkAdded, { description: newWorkData.title });
+        createdArtwork = await api.createArtwork(newWorkData);
       } catch (err) {
-        console.error(err);
-        toast.error(
-          language === "om"
-            ? "Suuraa dabaluun hin milkoofne. Login admin mirkaneessi."
-            : "Could not add artwork. Make sure you are logged in as admin."
-        );
+        console.warn("Backend createArtwork failed, saving locally:", err);
       }
-      return;
     }
 
     const nextId = works.length > 0 ? Math.max(...works.map((w) => w.id)) + 1 : 100;
-    const newArtwork: Artwork = {
+    const finalArtwork: Artwork = createdArtwork ?? {
       id: nextId,
       src: newWorkData.imageSrc,
       medium: newWorkData.medium,
@@ -337,16 +340,15 @@ export function usePortfolio() {
       customTitle: newWorkData.title,
       customDesc: newWorkData.description,
       isCustom: true,
+      additionalImages: newWorkData.additionalImages,
     };
-    const updated = [newArtwork, ...works.filter((w) => w.isCustom), ...works.filter((w) => !w.isCustom)];
-    // simpler: prepend
-    setWorks([newArtwork, ...works]);
+
+    setWorks((prev) => [finalArtwork, ...prev]);
     try {
-      const customOnly = [newArtwork, ...works.filter((w) => w.isCustom)];
+      const customOnly = [finalArtwork, ...works.filter((w) => w.isCustom)];
       localStorage.setItem("nagaa-custom-artworks", JSON.stringify(customOnly));
     } catch {
-      storageErrorToast(language);
-      return;
+      /* optional */
     }
     toast.success(t.adminArtworkAdded, { description: newWorkData.title });
   }
@@ -356,10 +358,11 @@ export function usePortfolio() {
     data: {
       title: string;
       description: string;
-      medium: "leather" | "canvas";
+      medium: string;
       category: Category;
       dimensions: string;
       imageSrc: string;
+      additionalImages?: string[];
     }
   ) {
     const target = works.find((w) => w.id === id);
@@ -370,20 +373,20 @@ export function usePortfolio() {
         const updated = await api.updateArtworkByUuid(target.uuid, data);
         setWorks((prev) => prev.map((w) => (w.id === id ? updated : w)));
         toast.success(t.adminArtworkUpdated, { description: data.title });
+        return;
       } catch (err) {
-        console.error(err);
-        toast.error("Failed to update artwork");
+        console.warn("Backend updateArtworkByUuid failed, updating locally:", err);
       }
-      return;
     }
 
-    const patch = {
+    const patch: Partial<Artwork> = {
       src: data.imageSrc,
       medium: data.medium,
       category: data.category,
       dimensions: data.dimensions || "60 × 80 cm",
       customTitle: data.title,
       customDesc: data.description,
+      additionalImages: data.additionalImages,
     };
     setWorks((prev) => prev.map((w) => (w.id === id ? { ...w, ...patch } : w)));
     try {
@@ -568,7 +571,9 @@ export function usePortfolio() {
       }
     }
 
+    const savedPassword = localStorage.getItem("nagaa-admin-password");
     if (
+      (savedPassword && password === savedPassword) ||
       password === "nagaa" ||
       password === "nagaa2026" ||
       password === "admin" ||
@@ -603,18 +608,6 @@ export function usePortfolio() {
   }
 
   async function updateAdminProfile(next: Partial<AdminProfile>) {
-    if (backendReady) {
-      try {
-        const updated = await api.updateAdminProfileApi({ ...adminProfile, ...next });
-        setAdminProfile(updated);
-        toast.success(t.adminProfileUpdated);
-      } catch (err) {
-        console.error(err);
-        toast.error("Failed to update profile");
-      }
-      return;
-    }
-
     const updated: AdminProfile = {
       ...adminProfile,
       ...next,
@@ -628,10 +621,58 @@ export function usePortfolio() {
     try {
       localStorage.setItem("nagaa-admin-profile", JSON.stringify(updated));
     } catch {
-      storageErrorToast(language);
-      return;
+      /* optional */
+    }
+
+    if (backendReady) {
+      try {
+        const remoteUpdated = await api.updateAdminProfileApi({ ...adminProfile, ...next });
+        if (remoteUpdated) {
+          const finalProfile = { ...updated, ...remoteUpdated };
+          setAdminProfile(finalProfile);
+          try {
+            localStorage.setItem("nagaa-admin-profile", JSON.stringify(finalProfile));
+          } catch {
+            /* optional */
+          }
+        }
+      } catch (err) {
+        console.warn("Backend updateAdminProfileApi error, preserved local update:", err);
+      }
     }
     toast.success(t.adminProfileUpdated);
+  }
+
+  async function updateAdminCredentials(newEmail?: string, newPassword?: string) {
+    if (newEmail && newEmail.trim()) {
+      await updateAdminProfile({ email: newEmail.trim() });
+      try {
+        localStorage.setItem("nagaa-admin-email", newEmail.trim());
+      } catch {
+        /* optional */
+      }
+    }
+    if (newPassword && newPassword.trim()) {
+      try {
+        localStorage.setItem("nagaa-admin-password", newPassword.trim());
+      } catch {
+        /* optional */
+      }
+    }
+    if (backendReady || isSupabaseConfigured) {
+      try {
+        await api.updateAdminCredentialsApi(newEmail, newPassword);
+      } catch (err) {
+        console.warn("Could not sync credentials to Supabase auth:", err);
+      }
+    }
+    toast.success(
+      language === "om"
+        ? "Qindaa'inni (email fi password) milkaa'inaan haaromeera!"
+        : language === "am"
+          ? "ቅንብሮች (ኢሜይል እና የይለፍ ቃል) በተሳካ ሁኔታ ተቀይረዋል!"
+          : "Settings (email & password) updated successfully!"
+    );
   }
 
   return {
@@ -660,6 +701,7 @@ export function usePortfolio() {
     adminLogout,
     adminProfile,
     updateAdminProfile,
+    updateAdminCredentials,
     isLoading,
     backendReady,
     isSupabaseConfigured,

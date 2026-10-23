@@ -18,7 +18,41 @@ function stableNumericId(uuid: string): number {
   return Math.abs(hash);
 }
 
+const GALLERY_TAG_PREFIX = "\n<!-- GALLERY_IMAGES:";
+const GALLERY_TAG_SUFFIX = " -->";
+
+export function formatArtworkDescriptionWithGallery(
+  desc: string,
+  additionalImages?: string[]
+): string {
+  const clean = desc.replace(/\n?<!-- GALLERY_IMAGES:[\s\S]*?-->/g, "").trim();
+  if (!additionalImages || additionalImages.length === 0) return clean;
+  return `${clean}${GALLERY_TAG_PREFIX}${JSON.stringify(additionalImages)}${GALLERY_TAG_SUFFIX}`;
+}
+
+export function parseArtworkDescription(rawDesc?: string | null): {
+  description: string;
+  additionalImages?: string[];
+} {
+  if (!rawDesc) return { description: "" };
+  const match = rawDesc.match(/<!-- GALLERY_IMAGES:([\s\S]*?)-->/);
+  let additionalImages: string[] | undefined;
+  if (match && match[1]) {
+    try {
+      const parsed = JSON.parse(match[1].trim());
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        additionalImages = parsed;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  const description = rawDesc.replace(/\n?<!-- GALLERY_IMAGES:[\s\S]*?-->/g, "").trim();
+  return { description, additionalImages };
+}
+
 function mapArtwork(row: ArtworkRow): Artwork {
+  const { description, additionalImages } = parseArtworkDescription(row.description);
   const artwork: Artwork = {
     id: row.legacy_id ?? stableNumericId(row.id),
     uuid: row.id,
@@ -28,8 +62,9 @@ function mapArtwork(row: ArtworkRow): Artwork {
     dimensions: row.dimensions,
     year: row.year,
     customTitle: row.title,
-    customDesc: row.description,
+    customDesc: description,
     isCustom: !row.is_seed,
+    additionalImages,
   };
   if (row.image_key) artwork.imageKey = row.image_key;
   return artwork;
@@ -179,12 +214,34 @@ export async function createCategory(label: string): Promise<CustomCategory> {
 export async function createArtwork(input: {
   title: string;
   description: string;
-  medium: "leather" | "canvas";
+  medium: string;
   category: Category;
   dimensions: string;
   imageSrc: string;
+  additionalImages?: string[];
 }): Promise<Artwork> {
-  const imageUrl = await uploadArtworkImage(input.imageSrc);
+  let imageUrl = input.imageSrc;
+  try {
+    imageUrl = await uploadArtworkImage(input.imageSrc);
+  } catch (uploadErr) {
+    console.warn("Image upload to storage failed, keeping original image:", uploadErr);
+  }
+
+  let uploadedAdditional: string[] = [];
+  if (input.additionalImages && input.additionalImages.length > 0) {
+    uploadedAdditional = await Promise.all(
+      input.additionalImages.map(async (img) => {
+        try {
+          return await uploadArtworkImage(img);
+        } catch {
+          return img;
+        }
+      })
+    );
+  }
+
+  const encodedDesc = formatArtworkDescriptionWithGallery(input.description, uploadedAdditional);
+
   const { data: maxSort } = await getSupabase()
     .from("artworks")
     .select("sort_order")
@@ -196,7 +253,7 @@ export async function createArtwork(input: {
     .from("artworks")
     .insert({
       title: input.title,
-      description: input.description,
+      description: encodedDesc,
       medium: input.medium,
       category: input.category,
       dimensions: input.dimensions || "60 × 80 cm",
@@ -216,23 +273,39 @@ export async function updateArtworkByUuid(
   input: {
     title: string;
     description: string;
-    medium: "leather" | "canvas";
+    medium: string;
     category: Category;
     dimensions: string;
     imageSrc: string;
+    additionalImages?: string[];
   }
 ): Promise<Artwork> {
+  let uploadedAdditional: string[] = [];
+  if (input.additionalImages && input.additionalImages.length > 0) {
+    uploadedAdditional = await Promise.all(
+      input.additionalImages.map(async (img) => {
+        try {
+          return await uploadArtworkImage(img);
+        } catch {
+          return img;
+        }
+      })
+    );
+  }
+
+  const encodedDesc = formatArtworkDescriptionWithGallery(input.description, uploadedAdditional);
+
   const patch: {
     title: string;
     description: string;
-    medium: "leather" | "canvas";
+    medium: string;
     category: string;
     dimensions: string;
     image_url?: string | null;
     image_key?: string | null;
   } = {
     title: input.title,
-    description: input.description,
+    description: encodedDesc,
     medium: input.medium,
     category: input.category,
     dimensions: input.dimensions || "60 × 80 cm",
@@ -323,7 +396,11 @@ export async function deleteInquiryApi(id: string) {
 export async function updateAdminProfileApi(input: Partial<AdminProfile>): Promise<AdminProfile> {
   let avatarUrl = input.avatar;
   if (avatarUrl && avatarUrl.startsWith("data:")) {
-    avatarUrl = await uploadArtworkImage(avatarUrl, "avatars");
+    try {
+      avatarUrl = await uploadArtworkImage(avatarUrl, "avatars");
+    } catch (e) {
+      console.warn("Storage upload for avatar failed, storing directly/locally:", e);
+    }
   }
 
   const patch: {
@@ -347,6 +424,21 @@ export async function updateAdminProfileApi(input: Partial<AdminProfile>): Promi
     .single();
   if (error) throw error;
   return mapProfile(data);
+}
+
+export async function updateAdminCredentialsApi(email?: string, password?: string) {
+  if (!isSupabaseConfigured) return;
+  const updates: { email?: string; password?: string } = {};
+  if (email && email.trim()) updates.email = email.trim();
+  if (password && password.trim()) updates.password = password.trim();
+  if (Object.keys(updates).length === 0) return;
+
+  const { data, error } = await getSupabase().auth.updateUser(updates);
+  if (error) {
+    console.warn("Supabase auth updateUser error:", error);
+    throw error;
+  }
+  return data;
 }
 
 export async function adminSignIn(email: string, password: string) {
