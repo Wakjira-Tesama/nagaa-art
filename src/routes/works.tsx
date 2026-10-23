@@ -15,6 +15,8 @@ import {
   Layers,
   ArrowRight,
   Filter as FilterIcon,
+  Images,
+  Paintbrush,
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Button } from "@/components/ui/button";
@@ -26,7 +28,9 @@ import {
   filterWorksByCategory,
   listSelectableCategories,
   isBuiltInCategory,
+  formatMediumLabel,
   type Category,
+  type BuiltInCategory,
 } from "@/lib/art-content";
 
 export const Route = createFileRoute("/works")({
@@ -44,23 +48,31 @@ export const Route = createFileRoute("/works")({
 });
 
 function WorksPage() {
-  const { t, favorites, toggleFavorite, works, customCategories, categoryLabel } = usePortfolio();
+  const { t, favorites, toggleFavorite, works, customCategories, categoryLabel, language } =
+    usePortfolio();
   const navigate = useNavigate();
 
   const [categoryFilter, setCategoryFilter] = useState<Category>("all");
   const [selected, setSelected] = useState<number | null>(null);
+  const [activePhotoIdx, setActivePhotoIdx] = useState(0);
 
-  const builtInIcons = {
+  function handleSelectWork(id: number) {
+    setActivePhotoIdx(0);
+    setSelected(id);
+  }
+
+  const builtInIcons: Record<string, any> = {
     all: Sparkles,
+    wallpainting: Paintbrush,
     personal: User,
     hotel: Hotel,
     school: School,
     hospital: Hospital,
     other: Palette,
-  } as const;
+  };
 
   function categoryIcon(cat: string) {
-    return isBuiltInCategory(cat) ? builtInIcons[cat] : Layers;
+    return (builtInIcons[cat] as React.ComponentType<{ className?: string }>) || Layers;
   }
 
   const filterCategories: Category[] = ["all", ...listSelectableCategories(customCategories)];
@@ -184,7 +196,8 @@ function WorksPage() {
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {isBuiltInCategory(categoryFilter)
-                      ? t.categoryDescriptions[categoryFilter]
+                      ? (t.categoryDescriptions && t.categoryDescriptions[categoryFilter]) ||
+                        categoryLabel(categoryFilter)
                       : categoryLabel(categoryFilter)}
                   </p>
                 </div>
@@ -217,7 +230,7 @@ function WorksPage() {
                     {/* Image Area - Clickable on mobile and desktop */}
                     <div
                       className="relative aspect-[4/3] sm:aspect-[3/4] w-full overflow-hidden bg-muted cursor-pointer"
-                      onClick={() => setSelected(work.id)}
+                      onClick={() => handleSelectWork(work.id)}
                     >
                       <img
                         src={work.src}
@@ -228,7 +241,7 @@ function WorksPage() {
 
                       {/* Top Badges */}
                       <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 right-2.5 sm:right-3 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap max-w-[80%]">
                           <span
                             className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold backdrop-blur-md shadow ${
                               isLeather
@@ -236,11 +249,17 @@ function WorksPage() {
                                 : "bg-stone-900/80 text-stone-200 border border-stone-500/30"
                             }`}
                           >
-                            {isLeather ? t.leather : t.canvas}
+                            {formatMediumLabel(work.medium, t, language)}
                           </span>
                           <span className="rounded-full bg-background/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground backdrop-blur-md">
                             {categoryLabel(work.category)}
                           </span>
+                          {work.additionalImages && work.additionalImages.length > 0 && (
+                            <span className="flex items-center gap-1 rounded-full bg-black/75 px-2 py-0.5 text-[10px] font-semibold text-amber-300 backdrop-blur-md border border-amber-500/30">
+                              <Images className="h-3 w-3" />
+                              +{work.additionalImages.length}
+                            </span>
+                          )}
                         </div>
 
                         <Button
@@ -357,7 +376,7 @@ function WorksPage() {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="rounded-full">
-                <a href="tel:+251900000000">{t.quickDirectCall}</a>
+                <a href="tel:+251917362405">{t.quickDirectCall}</a>
               </Button>
             </div>
           </div>
@@ -382,98 +401,159 @@ function WorksPage() {
               if (e.key === "ArrowLeft") step(-1);
             }}
           >
-            {active && (
-              <>
-                <div className="mb-4 flex items-center justify-between gap-4 border-b border-border/50 pb-3">
-                  <div>
-                    <Dialog.Title className="font-display text-xl sm:text-2xl font-bold text-foreground">
-                      {active.customTitle || t.titles[active.id]}
-                    </Dialog.Title>
-                    <Dialog.Description className="text-xs sm:text-sm text-primary font-medium">
-                      {active.medium === "leather" ? t.leather : t.canvas} · {categoryLabel(active.category)} ·{" "}
-                      {active.dimensions} ({active.year})
-                    </Dialog.Description>
-                  </div>
+            {active && (() => {
+              const activeImages = [active.src, ...(active.additionalImages || [])];
+              const currentPhoto = activeImages[activePhotoIdx] ?? active.src;
+              const hasMultiple = activeImages.length > 1;
 
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      onClick={() => toggleFavorite(active.id)}
-                      className="h-9 w-9 rounded-full"
-                      aria-label={favorites.includes(active.id) ? t.unsave : t.save}
-                    >
-                      <Heart
-                        className={`h-4 w-4 ${
-                          favorites.includes(active.id)
-                            ? "fill-rose-500 text-rose-500"
-                            : "text-foreground"
-                        }`}
-                      />
-                    </Button>
-                    <Dialog.Close asChild>
+              return (
+                <>
+                  <div className="mb-4 flex items-center justify-between gap-4 border-b border-border/50 pb-3">
+                    <div>
+                      <Dialog.Title className="font-display text-xl sm:text-2xl font-bold text-foreground">
+                        {active.customTitle || (t.titles && t.titles[active.id]) || `Artwork #${active.id + 1}`}
+                      </Dialog.Title>
+                      <Dialog.Description className="text-xs sm:text-sm text-primary font-medium">
+                        {formatMediumLabel(active.medium, t, language)} · {categoryLabel(active.category)}
+                        {active.dimensions ? ` · ${active.dimensions}` : ""} ({active.year})
+                      </Dialog.Description>
+                    </div>
+
+                    <div className="flex items-center gap-2">
                       <Button
+                        variant="secondary"
                         size="icon"
-                        variant="ghost"
+                        onClick={() => toggleFavorite(active.id)}
                         className="h-9 w-9 rounded-full"
-                        aria-label={t.close}
+                        aria-label={favorites.includes(active.id) ? t.unsave : t.save}
                       >
-                        <X className="h-5 w-5" />
+                        <Heart
+                          className={`h-4 w-4 ${
+                            favorites.includes(active.id)
+                              ? "fill-rose-500 text-rose-500"
+                              : "text-foreground"
+                          }`}
+                        />
                       </Button>
-                    </Dialog.Close>
+                      <Dialog.Close asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-9 w-9 rounded-full"
+                          aria-label={t.close}
+                        >
+                          <X className="h-5 w-5" />
+                        </Button>
+                      </Dialog.Close>
+                    </div>
                   </div>
-                </div>
 
-                <div className="relative flex items-center justify-center overflow-hidden rounded-2xl bg-black/40 p-2">
-                  <img
-                    src={active.src}
-                    alt={active.customTitle || t.titles[active.id]}
-                    className="max-h-[60vh] w-full object-contain rounded-xl"
-                  />
-                </div>
+                  <div className="relative flex items-center justify-center overflow-hidden rounded-2xl bg-black/40 p-2 min-h-[300px]">
+                    <img
+                      src={currentPhoto}
+                      alt={active.customTitle || (t.titles && t.titles[active.id]) || "Artwork"}
+                      className="max-h-[58vh] w-full object-contain rounded-xl transition-all duration-300"
+                    />
 
-                <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <p className="text-xs sm:text-sm text-muted-foreground max-w-lg">
-                    {active.customDesc || t.descriptions[active.id]}
-                  </p>
-                  <Button
-                    onClick={() => handleOrderSimilar(active)}
-                    className="rounded-full bg-primary text-primary-foreground font-semibold shrink-0"
-                  >
-                    <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                    {t.orderSimilar}
-                  </Button>
-                </div>
+                    {hasMultiple && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setActivePhotoIdx(
+                              (prev) => (prev - 1 + activeImages.length) % activeImages.length
+                            )
+                          }
+                          className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-black/65 text-white backdrop-blur transition hover:bg-black/85 hover:scale-105"
+                          aria-label="Previous photo"
+                        >
+                          <ChevronLeft className="h-5 w-5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setActivePhotoIdx((prev) => (prev + 1) % activeImages.length)
+                          }
+                          className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-black/65 text-white backdrop-blur transition hover:bg-black/85 hover:scale-105"
+                          aria-label="Next photo"
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </button>
+                        <span className="absolute bottom-3 right-3 rounded-full bg-black/75 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur border border-white/10">
+                          {activePhotoIdx + 1} / {activeImages.length}
+                        </span>
+                      </>
+                    )}
+                  </div>
 
-                <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-full"
-                    onClick={() => step(-1)}
-                    aria-label={t.previous}
-                  >
-                    <ChevronLeft className="mr-1 h-4 w-4" />
-                    {t.previous}
-                  </Button>
+                  {hasMultiple && (
+                    <div className="mt-3 flex items-center justify-center gap-2 overflow-x-auto p-1">
+                      {activeImages.map((imgSrc, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setActivePhotoIdx(idx)}
+                          className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
+                            activePhotoIdx === idx
+                              ? "border-amber-500 ring-2 ring-amber-500/40 scale-105"
+                              : "border-border/60 opacity-60 hover:opacity-100"
+                          }`}
+                        >
+                          <img src={imgSrc} alt="" className="h-full w-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
-                  <span className="text-xs font-mono text-muted-foreground">
-                    {visible.findIndex((w) => w.id === active.id) + 1} / {visible.length}
-                  </span>
+                  <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <p className="text-xs sm:text-sm text-muted-foreground max-w-lg">
+                      {active.customDesc || (t.descriptions && t.descriptions[active.id]) || ""}
+                    </p>
+                    <Button
+                      onClick={() => handleOrderSimilar(active)}
+                      className="rounded-full bg-primary text-primary-foreground font-semibold shrink-0"
+                    >
+                      <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                      {t.orderSimilar}
+                    </Button>
+                  </div>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-full"
-                    onClick={() => step(1)}
-                    aria-label={t.next}
-                  >
-                    {t.next}
-                    <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
-                </div>
-              </>
-            )}
+                  <div className="mt-4 flex items-center justify-between border-t border-border/50 pt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full"
+                      onClick={() => {
+                        step(-1);
+                        setActivePhotoIdx(0);
+                      }}
+                      aria-label={t.previous}
+                    >
+                      <ChevronLeft className="mr-1 h-4 w-4" />
+                      {t.previous}
+                    </Button>
+
+                    <span className="text-xs font-mono text-muted-foreground">
+                      {visible.findIndex((w) => w.id === active.id) + 1} / {visible.length}
+                    </span>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full"
+                      onClick={() => {
+                        step(1);
+                        setActivePhotoIdx(0);
+                      }}
+                      aria-label={t.next}
+                    >
+                      {t.next}
+                      <ChevronRight className="ml-1 h-4 w-4" />
+                    </Button>
+                  </div>
+                </>
+              );
+            })()}
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>

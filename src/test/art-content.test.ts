@@ -28,15 +28,19 @@ describe("Artwork category filtering", () => {
     { id: 1, medium: "canvas", category: "school" as Category },
     { id: 2, medium: "leather", category: "hospital" as Category },
     { id: 3, medium: "canvas", category: "hotel" as Category },
+    { id: 4, medium: "canvas", category: "wallpainting" as Category },
   ];
 
   it("filters by category correctly", () => {
     expect(filterWorksByCategory(works, "all", "school", [])).toEqual([works[1]]);
     expect(filterWorksByCategory(works, "all", "hospital", [])).toEqual([works[2]]);
+    expect(filterWorksByCategory(works, "all", "wallpainting", [])).toEqual([works[4]]);
   });
 
   it("combines medium and category filters", () => {
     expect(filterWorksByCategory(works, "leather", "hotel", [])).toEqual([]);
     expect(filterWorksByCategory(works, "canvas", "hotel", [])).toEqual([works[3]]);
+    expect(filterWorksByCategory(works, "canvas", "wallpainting", [])).toEqual([works[4]]);
   });
 });
+

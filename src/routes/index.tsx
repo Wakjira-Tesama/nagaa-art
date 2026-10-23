@@ -15,6 +15,9 @@ import {
   CheckCircle2,
   Phone,
   X,
+  Images,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Button } from "@/components/ui/button";
@@ -22,7 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { usePortfolio, type Artwork } from "@/hooks/use-portfolio";
-import { type BuiltInCategory } from "@/lib/art-content";
+import { type BuiltInCategory, formatMediumLabel } from "@/lib/art-content";
 
 import nagaaAsset from "@/assets/nagaa.jpg.asset.json";
 import nagaaHero from "@/assets/nagaa_hero.jpg";
@@ -56,8 +59,14 @@ export const Route = createFileRoute("/")({
 });
 
 function IndexPage() {
-  const { t, works, favorites, toggleFavorite, categoryLabel } = usePortfolio();
+  const { t, works, favorites, toggleFavorite, categoryLabel, language } = usePortfolio();
   const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
+  const [homePhotoIdx, setHomePhotoIdx] = useState(0);
+
+  function openArtworkModal(work: Artwork) {
+    setHomePhotoIdx(0);
+    setSelectedArtwork(work);
+  }
 
   const categoryIcons = {
     all: Sparkles,
@@ -308,15 +317,23 @@ function IndexPage() {
                       />
 
                       <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold backdrop-blur-md shadow ${
-                            isLeather
-                              ? "bg-amber-950/80 text-amber-200 border border-amber-500/30"
-                              : "bg-stone-900/80 text-stone-200 border border-stone-500/30"
-                          }`}
-                        >
-                          {isLeather ? t.leather : t.canvas}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap max-w-[80%]">
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold backdrop-blur-md shadow ${
+                              isLeather
+                                ? "bg-amber-950/80 text-amber-200 border border-amber-500/30"
+                                : "bg-stone-900/80 text-stone-200 border border-stone-500/30"
+                            }`}
+                          >
+                            {formatMediumLabel(work.medium, t, language)}
+                          </span>
+                          {work.additionalImages && work.additionalImages.length > 0 && (
+                            <span className="flex items-center gap-1 rounded-full bg-black/75 px-2 py-0.5 text-[10px] font-semibold text-amber-300 backdrop-blur-md border border-amber-500/30">
+                              <Images className="h-3 w-3" />
+                              +{work.additionalImages.length}
+                            </span>
+                          )}
+                        </div>
 
                         <Button
                           variant="secondary"
@@ -337,7 +354,7 @@ function IndexPage() {
                       <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                         <Button
                           size="sm"
-                          onClick={() => setSelectedArtwork(work)}
+                          onClick={() => openArtworkModal(work)}
                           className="rounded-full bg-background/90 text-foreground backdrop-blur hover:bg-primary hover:text-primary-foreground transition-all shadow-lg"
                         >
                           <Expand className="mr-1.5 h-3.5 w-3.5" />
@@ -414,46 +431,101 @@ function IndexPage() {
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md animate-in fade-in" />
           <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-border/80 bg-card p-6 shadow-2xl focus:outline-none animate-in zoom-in-95">
-            {selectedArtwork && (
-              <>
-                <div className="mb-4 flex items-center justify-between gap-4 border-b border-border/50 pb-3">
-                  <div>
-                    <Dialog.Title className="font-display text-xl font-bold text-foreground">
-                      {selectedArtwork.customTitle || t.titles[selectedArtwork.id]}
-                    </Dialog.Title>
-                    <Dialog.Description className="text-xs text-primary font-medium">
-                      {selectedArtwork.medium === "leather" ? t.leather : t.canvas} ·{" "}
-                      {categoryLabel(selectedArtwork.category)}
-                    </Dialog.Description>
+            {selectedArtwork && (() => {
+              const activeImages = [selectedArtwork.src, ...(selectedArtwork.additionalImages || [])];
+              const currentPhoto = activeImages[homePhotoIdx] ?? selectedArtwork.src;
+              const hasMultiple = activeImages.length > 1;
+
+              return (
+                <>
+                  <div className="mb-4 flex items-center justify-between gap-4 border-b border-border/50 pb-3">
+                    <div>
+                      <Dialog.Title className="font-display text-xl font-bold text-foreground">
+                        {selectedArtwork.customTitle || t.titles[selectedArtwork.id]}
+                      </Dialog.Title>
+                      <Dialog.Description className="text-xs text-primary font-medium">
+                        {formatMediumLabel(selectedArtwork.medium, t, language)} ·{" "}
+                        {categoryLabel(selectedArtwork.category)}
+                      </Dialog.Description>
+                    </div>
+                    <Dialog.Close asChild>
+                      <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full">
+                        <X className="h-5 w-5" />
+                      </Button>
+                    </Dialog.Close>
                   </div>
-                  <Dialog.Close asChild>
-                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full">
-                      <X className="h-5 w-5" />
+
+                  <div className="relative flex items-center justify-center overflow-hidden rounded-2xl bg-black/40 p-2 min-h-[280px]">
+                    <img
+                      src={currentPhoto}
+                      alt={selectedArtwork.customTitle || t.titles[selectedArtwork.id]}
+                      className="max-h-[55vh] w-full object-contain rounded-xl transition-all duration-300"
+                    />
+
+                    {hasMultiple && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setHomePhotoIdx(
+                              (prev) => (prev - 1 + activeImages.length) % activeImages.length
+                            )
+                          }
+                          className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-black/65 text-white backdrop-blur transition hover:bg-black/85 hover:scale-105"
+                          aria-label="Previous photo"
+                        >
+                          <ChevronLeft className="h-5 w-5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setHomePhotoIdx((prev) => (prev + 1) % activeImages.length)
+                          }
+                          className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-black/65 text-white backdrop-blur transition hover:bg-black/85 hover:scale-105"
+                          aria-label="Next photo"
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </button>
+                        <span className="absolute bottom-3 right-3 rounded-full bg-black/75 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur border border-white/10">
+                          {homePhotoIdx + 1} / {activeImages.length}
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  {hasMultiple && (
+                    <div className="mt-3 flex items-center justify-center gap-2 overflow-x-auto p-1">
+                      {activeImages.map((imgSrc, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setHomePhotoIdx(idx)}
+                          className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
+                            homePhotoIdx === idx
+                              ? "border-amber-500 ring-2 ring-amber-500/40 scale-105"
+                              : "border-border/60 opacity-60 hover:opacity-100"
+                          }`}
+                        >
+                          <img src={imgSrc} alt="" className="h-full w-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <p className="text-xs text-muted-foreground max-w-md">
+                      {selectedArtwork.customDesc || t.descriptions[selectedArtwork.id]}
+                    </p>
+                    <Button asChild className="rounded-full bg-primary text-primary-foreground font-semibold shrink-0">
+                      <Link to="/contact">
+                        <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                        {t.orderSimilar}
+                      </Link>
                     </Button>
-                  </Dialog.Close>
-                </div>
-
-                <div className="relative flex items-center justify-center overflow-hidden rounded-2xl bg-black/40 p-2">
-                  <img
-                    src={selectedArtwork.src}
-                    alt={selectedArtwork.customTitle || t.titles[selectedArtwork.id]}
-                    className="max-h-[55vh] w-full object-contain rounded-xl"
-                  />
-                </div>
-
-                <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <p className="text-xs text-muted-foreground max-w-md">
-                    {selectedArtwork.customDesc || t.descriptions[selectedArtwork.id]}
-                  </p>
-                  <Button asChild className="rounded-full bg-primary text-primary-foreground font-semibold shrink-0">
-                    <Link to="/contact">
-                      <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                      {t.orderSimilar}
-                    </Link>
-                  </Button>
-                </div>
-              </>
-            )}
+                  </div>
+                </>
+              );
+            })()}
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
