@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import {
   Unlock,
@@ -60,6 +60,7 @@ export const Route = createFileRoute("/admin")({
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 
 function AdminPage() {
+  const navigate = useNavigate();
   const {
     t,
     language,
@@ -188,19 +189,6 @@ function AdminPage() {
     } finally {
       setIsLoggingIn(false);
     }
-  }
-
-  async function handleQuickDemoLogin() {
-    if (isSupabaseConfigured) {
-      toast.info(
-        language === "om"
-          ? "Supabase irratti imeelii fi password admin fayyadami."
-          : "Use your Supabase admin email and password."
-      );
-      return;
-    }
-    await adminLogin("nagaa");
-    toast.success("Demo Login Successful!");
   }
 
   function readImageFile(file: File) {
@@ -580,18 +568,6 @@ function AdminPage() {
               <Unlock className="mr-2 h-4 w-4" />
               {isLoggingIn ? "..." : t.adminLoginButton}
             </Button>
-
-            {!isSupabaseConfigured && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleQuickDemoLogin}
-                className="h-11 w-full rounded-2xl border-white/25 bg-transparent text-sm text-white/90 hover:bg-white/10 hover:text-white"
-              >
-                <Sparkles className="mr-1.5 h-3.5 w-3.5 text-amber-300" />
-                {t.adminQuickDemoLogin}
-              </Button>
-            )}
           </form>
 
           <div className="mt-8 text-center animate-[login-rise_1.3s_ease-out]">
@@ -815,9 +791,10 @@ function AdminPage() {
                   <button
                     type="button"
                     role="menuitem"
-                    onClick={() => {
+                    onClick={async () => {
                       setProfileMenuOpen(false);
-                      adminLogout();
+                      await adminLogout();
+                      void navigate({ to: "/" });
                     }}
                     className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
                   >

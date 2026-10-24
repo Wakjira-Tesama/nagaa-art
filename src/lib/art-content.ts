@@ -188,6 +188,8 @@ export interface TranslationSchema {
   filterByCategoryTitle: string;
   filterByMediumTitle: string;
   viewAllWorks: string;
+  themeLight: string;
+  themeDark: string;
   // Admin Portal
   navAdmin: string;
   adminTitle: string;
@@ -391,6 +393,8 @@ export const translations: Record<Language, TranslationSchema> = {
     filterByCategoryTitle: "Ramaddiidhaan Filadhu",
     filterByMediumTitle: "Gosa Meeshaatiin",
     viewAllWorks: "Hojiiwwan Hunda Ilaali",
+    themeLight: "Ifaa (Light)",
+    themeDark: "Dukkana (Dark)",
     // Admin Portal
     navAdmin: "Admin",
     adminTitle: "Admin Dashboard",
@@ -595,6 +599,8 @@ export const translations: Record<Language, TranslationSchema> = {
     filterByCategoryTitle: "Filter by Category",
     filterByMediumTitle: "Filter by Medium",
     viewAllWorks: "View All Artworks",
+    themeLight: "Light Mode",
+    themeDark: "Dark Mode",
     // Admin Portal
     navAdmin: "Admin",
     adminTitle: "Admin Studio Dashboard",
@@ -799,6 +805,8 @@ export const translations: Record<Language, TranslationSchema> = {
     filterByCategoryTitle: "በዘርፍ ይምረጡ",
     filterByMediumTitle: "በዓይነት ይምረጡ",
     viewAllWorks: "ሁሉንም ሥራዎች ይመልከቱ",
+    themeLight: "ቀላል (Light)",
+    themeDark: "ጨለማ (Dark)",
     // Admin Portal
     navAdmin: "አስተዳዳሪ",
     adminTitle: "የአስተዳዳሪ ዳሽቦርድ",

@@ -108,6 +108,30 @@ function notifyFavoriteListeners(favs: number[]) {
   favoriteListeners.forEach((fn) => fn(sessionFavorites));
 }
 
+export type Theme = "light" | "dark";
+
+let globalTheme: Theme =
+  typeof window !== "undefined" && localStorage.getItem("nagaa-theme") === "light"
+    ? "light"
+    : "dark";
+const themeListeners = new Set<(theme: Theme) => void>();
+
+function notifyThemeListeners(theme: Theme) {
+  globalTheme = theme;
+  themeListeners.forEach((fn) => fn(theme));
+}
+
+let globalAdminLoggedIn =
+  typeof window !== "undefined"
+    ? sessionStorage.getItem("nagaa-admin-auth") === "true"
+    : false;
+const adminAuthListeners = new Set<(loggedIn: boolean) => void>();
+
+function notifyAdminAuthListeners(loggedIn: boolean) {
+  globalAdminLoggedIn = loggedIn;
+  adminAuthListeners.forEach((fn) => fn(loggedIn));
+}
+
 function storageErrorToast(language: Language) {
   toast.error(
     language === "om"
@@ -119,13 +143,14 @@ function storageErrorToast(language: Language) {
 }
 
 export function usePortfolio() {
+  const [theme, setThemeState] = useState<Theme>(globalTheme);
   const [language, setLanguageState] = useState<Language>("om");
   const [favorites, setFavorites] = useState<number[]>(sessionFavorites);
   const [works, setWorks] = useState<Artwork[]>(defaultWorks);
   const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>(initialInquiries);
   const [adminProfile, setAdminProfile] = useState<AdminProfile>(defaultAdminProfile);
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(globalAdminLoggedIn);
   const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
   const [backendReady, setBackendReady] = useState(false);
 
@@ -145,12 +170,53 @@ export function usePortfolio() {
   }, [language]);
 
   useEffect(() => {
+    try {
+      const savedTheme = localStorage.getItem("nagaa-theme");
+      const resolved: Theme = savedTheme === "light" ? "light" : "dark";
+      setThemeState(resolved);
+      if (resolved === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    } catch {
+      /* optional */
+    }
+  }, []);
+
+  useEffect(() => {
     const listener = (newFavs: number[]) => setFavorites([...newFavs]);
     favoriteListeners.add(listener);
+    const authListener = (loggedIn: boolean) => setIsAdminLoggedIn(loggedIn);
+    adminAuthListeners.add(authListener);
+    const themeListener = (nextTheme: Theme) => setThemeState(nextTheme);
+    themeListeners.add(themeListener);
     return () => {
       favoriteListeners.delete(listener);
+      adminAuthListeners.delete(authListener);
+      themeListeners.delete(themeListener);
     };
   }, []);
+
+  function toggleTheme() {
+    const next: Theme = theme === "light" ? "dark" : "light";
+    setTheme(next);
+  }
+
+  function setTheme(next: Theme) {
+    setThemeState(next);
+    notifyThemeListeners(next);
+    try {
+      localStorage.setItem("nagaa-theme", next);
+      if (next === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    } catch {
+      /* optional */
+    }
+  }
 
   // Load from Supabase when configured; otherwise localStorage fallback
   useEffect(() => {
@@ -166,7 +232,13 @@ export function usePortfolio() {
       try {
         setIsLoading(true);
         const session = await api.getAdminSession();
-        if (!cancelled) setIsAdminLoggedIn(Boolean(session));
+        if (!cancelled) {
+          const isAuth =
+            Boolean(session) ||
+            (typeof window !== "undefined" &&
+              sessionStorage.getItem("nagaa-admin-auth") === "true");
+          notifyAdminAuthListeners(isAuth);
+        }
 
         const bundle = await api.fetchPortfolioBundle();
         if (cancelled) return;
@@ -236,7 +308,7 @@ export function usePortfolio() {
         if (savedProfile) setAdminProfile({ ...defaultAdminProfile, ...JSON.parse(savedProfile) });
         if (savedInquiries) setInquiries(JSON.parse(savedInquiries));
         else localStorage.setItem("nagaa-inquiries", JSON.stringify(initialInquiries));
-        if (adminAuth === "true") setIsAdminLoggedIn(true);
+        if (adminAuth === "true") notifyAdminAuthListeners(true);
       } catch {
         /* optional */
       }
@@ -557,7 +629,12 @@ export function usePortfolio() {
       try {
         const loginEmail = (email || adminProfile.email || "admin@nagaa.art").trim();
         await api.adminSignIn(loginEmail, password);
-        setIsAdminLoggedIn(true);
+        try {
+          sessionStorage.setItem("nagaa-admin-auth", "true");
+        } catch {
+          /* optional */
+        }
+        notifyAdminAuthListeners(true);
         try {
           const fresh = await api.fetchInquiries();
           setInquiries(fresh);
@@ -579,12 +656,12 @@ export function usePortfolio() {
       password === "admin" ||
       password === "123456"
     ) {
-      setIsAdminLoggedIn(true);
       try {
         sessionStorage.setItem("nagaa-admin-auth", "true");
       } catch {
         /* optional */
       }
+      notifyAdminAuthListeners(true);
       return true;
     }
     return false;
@@ -598,12 +675,12 @@ export function usePortfolio() {
         /* optional */
       }
     }
-    setIsAdminLoggedIn(false);
     try {
       sessionStorage.removeItem("nagaa-admin-auth");
     } catch {
       /* optional */
     }
+    notifyAdminAuthListeners(false);
     toast.info(t.adminLogout);
   }
 
@@ -705,5 +782,8 @@ export function usePortfolio() {
     isLoading,
     backendReady,
     isSupabaseConfigured,
+    theme,
+    toggleTheme,
+    setTheme,
   };
 }

@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Palette, Languages, Sparkles, Menu, X } from "lucide-react";
+import { Palette, Languages, Sparkles, Menu, X, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePortfolio } from "@/hooks/use-portfolio";
 
 export function Navbar() {
-  const { language, changeLanguage, languages, t } = usePortfolio();
+  const { language, changeLanguage, languages, t, theme, toggleTheme } = usePortfolio();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
@@ -57,7 +57,24 @@ export function Navbar() {
         </nav>
 
         {/* Right Action Bar */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          {/* Theme Toggle (Light / Dark) */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={toggleTheme}
+            aria-label={theme === "light" ? t.themeDark : t.themeLight}
+            title={theme === "light" ? t.themeDark : t.themeLight}
+            className="h-9 w-9 rounded-full border border-border/80 bg-card/80 text-foreground backdrop-blur hover:bg-accent/15 hover:text-primary transition-all"
+          >
+            {theme === "light" ? (
+              <Moon className="h-4 w-4 text-amber-700 transition-transform hover:rotate-12" />
+            ) : (
+              <Sun className="h-4 w-4 text-amber-400 transition-transform hover:rotate-45" />
+            )}
+          </Button>
+
           {/* Language Selector */}
           <div className="relative flex items-center">
             <label htmlFor="language-select-nav" className="sr-only">
@@ -127,6 +144,26 @@ export function Navbar() {
                 </Link>
               );
             })}
+
+            {/* Mobile Theme Toggle Row */}
+            <div className="flex items-center justify-between rounded-xl px-4 py-2.5 bg-card/70 border border-border/60">
+              <span className="text-xs font-medium text-foreground flex items-center gap-2">
+                {theme === "light" ? (
+                  <Sun className="h-4 w-4 text-amber-600" />
+                ) : (
+                  <Moon className="h-4 w-4 text-amber-400" />
+                )}
+                {theme === "light" ? t.themeLight : t.themeDark}
+              </span>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="text-xs font-semibold px-3 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+              >
+                {theme === "light" ? t.themeDark : t.themeLight}
+              </button>
+            </div>
+
             <Button asChild size="sm" className="mt-2 w-full rounded-xl bg-primary text-primary-foreground">
               <Link to="/contact" onClick={() => setMobileMenuOpen(false)}>
                 <Sparkles className="mr-1.5 h-3.5 w-3.5" />

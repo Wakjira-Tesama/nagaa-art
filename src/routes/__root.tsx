@@ -4,6 +4,8 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useNavigate,
+  useLocation,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -13,6 +15,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { usePortfolio } from "@/hooks/use-portfolio";
 
 function NotFoundComponent() {
   return (
@@ -103,8 +106,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("nagaa-theme");if(t==="dark"){document.documentElement.classList.add("dark");}else{document.documentElement.classList.remove("dark");}}catch(e){}})();`,
+          }}
+        />
         <HeadContent />
       </head>
       <body>
@@ -117,6 +125,17 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { isAdminLoggedIn } = usePortfolio();
+
+  useEffect(() => {
+    // If admin is logged in and has not logged out, prevent them from browsing public website pages
+    // and keep them inside the admin dashboard
+    if (isAdminLoggedIn && location.pathname !== "/admin") {
+      void navigate({ to: "/admin" });
+    }
+  }, [isAdminLoggedIn, location.pathname, navigate]);
 
   return (
     <QueryClientProvider client={queryClient}>
